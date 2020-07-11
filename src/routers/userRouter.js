@@ -24,4 +24,58 @@ router.post('/users/login', async (req, res) => {
   }
 });
 
+router.post('/users/logout', auth, async (req, res) => {
+  try {
+    req.user.tokens = req.user.tokens.filter(({ token }) => token !== req.token);
+    await req.user.save();
+    res.send();
+  } catch (err) {
+    res.status(500).send();
+  }
+});
+
+router.get('/users/me', auth, async (req, res) => {
+  res.send(req.user);
+});
+
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).send();
+    }
+    const publicProfile = user.getPublicProfile();
+    res.send(publicProfile);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+router.patch('/users/me', auth, async (req, res) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ['email', 'password', 'firstName', 'lastName', 'street', 'zipCode', 'country', 'city', 'phone'];
+  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+  if (!isValidOperation) {
+    return res.status(400).send({ error: `You can't change these data` });
+  }
+  try {
+    updates.forEach((update) => {
+      req.user[update] = req.body[update];
+    });
+    await req.user.save();
+    res.send(req.user);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.delete('/users/me', auth, async (req, res) => {
+  try {
+    await req.user.remove();
+    res.send(req.user);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 module.exports = router;

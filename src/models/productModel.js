@@ -21,8 +21,10 @@ const productSchema = new mongoose.Schema({
   quantity: {
     type: Number,
     required: true,
-    trim: true,
     max: 100000,
+  },
+  condition: {
+    type: String,
   },
   seller: {
     type: mongoose.Schema.Types.ObjectId,
