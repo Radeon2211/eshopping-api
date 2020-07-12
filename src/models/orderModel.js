@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
   products: [{
-    id: {
+    _id: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'Product',
@@ -18,7 +18,7 @@ const orderSchema = new mongoose.Schema({
       type: Number,
       required: true,
     },
-    unitPrice: {
+    price: {
       type: String,
       required: true,
     },
