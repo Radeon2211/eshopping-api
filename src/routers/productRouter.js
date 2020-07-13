@@ -31,11 +31,8 @@ router.get('/products', async (req, res) => {
     $lte: req.query.maxPrice || Infinity,
   }
   if (req.query.sortBy) {
-    const filters = req.query.sortBy.split('-');
-    filters.forEach((filter) => {
-      const parts = filter.split(':');
-      sort[parts[0]] = parts[1] === 'asc';
-    });
+    const parts = req.query.sortBy.split(':');
+    sort[parts[0]] = parts[1] === 'asc' ? 1 : -1;
   }
   try {
     const products = await Product.find(match, null, {
@@ -107,18 +104,22 @@ const upload = multer({
   }
 });
 
-router.patch('/products/:id/photo', auth, upload.single('photo'), async (req, res) => {
-  const buffer = await sharp(req.file.buffer).resize({ height: 500 }).jpeg().toBuffer();
-  const miniBuffer = await imagemin.buffer(buffer, {
-    plugins: [mozjpeg({ quality: 60 })],
-  });
-  const product = await Product.findById(req.params.id);
-  if (!product) {
-    throw new Error();
+router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res) => {
+  try {
+    const buffer = await sharp(req.file.buffer).resize({ height: 500 }).jpeg().toBuffer();
+    const miniBuffer = await imagemin.buffer(buffer, {
+      plugins: [mozjpeg({ quality: 60 })],
+    });
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
+    if (!product) {
+      throw new Error();
+    }
+    product.photo = miniBuffer;
+    await product.save();
+    res.send();
+  } catch (err) {
+    res.status(400).send(err);
   }
-  product.photo = miniBuffer;
-  await product.save();
-  res.send();
 }, (error, req, res, next) => {
   res.status(400).send({ error: error.message });
 });
@@ -138,7 +139,7 @@ router.get('/products/:id/photo', async (req, res) => {
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
     if (!product || !product.photo) {
       throw new Error();
     }

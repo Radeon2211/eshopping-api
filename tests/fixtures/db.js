@@ -44,7 +44,7 @@ const productOne = {
   _id: new mongoose.Types.ObjectId(),
   name: 'Mushrooms',
   description: 'Healthy mushrooms',
-  price: '0,50',
+  price: 0.50,
   quantity: 1000,
   seller: userOneId,
 };
@@ -52,11 +52,21 @@ const productOne = {
 const productTwo = {
   _id: new mongoose.Types.ObjectId(),
   name: 'Knife for cutting mushrooms',
-  description: 'Thanks to this knife you will be able to collect mushroom super fastly',
-  price: '12,00',
+  description: 'Thanks to this knife you will be able to collect mushrooms super fastly',
+  price: 12.00,
   condition: 'new',
   quantity: 1,
-  seller: userOneId,
+  seller: userTwoId,
+};
+
+const productThree = {
+  _id: new mongoose.Types.ObjectId(),
+  name: 'Wellingtons',
+  description: 'Wellingtons that are waterproof and super cool for collecting mushrooms',
+  price: 30.00,
+  condition: 'new',
+  quantity: 1,
+  seller: userTwoId,
 };
 
 const setupDatabase = async () => {
@@ -67,6 +77,7 @@ const setupDatabase = async () => {
   await new User(userTwo).save();
   await new Product(productOne).save();
   await new Product(productTwo).save();
+  await new Product(productThree).save();
 };
 
 module.exports = {

@@ -12,7 +12,7 @@ test('Should create product', async () => {
     .send({
       name: 'Mega mushrooms',
       description: 'Healthy mega mushrooms',
-      price: '1,50',
+      price: 1.50,
       quantity: 1000,
       seller: userOneId,
     })
@@ -21,13 +21,13 @@ test('Should create product', async () => {
   expect(product).not.toBeNull();
 });
 
-test('Should fetch two products', async () => {
+test('Should fetch three products', async () => {
   const response = await request(app)
     .get('/products')
     .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
     .send()
     .expect(200);
-  expect(response.body).toHaveLength(2);
+  expect(response.body).toHaveLength(3);
 });
 
 test('Should not second user delete the first task', async () => {
@@ -52,4 +52,161 @@ test('Should not create product with invalid quantity', async () => {
       seller: userOneId,
     })
     .expect(400);
+});
+
+test('Should delete authenticated users product', async () => {
+  const response = await request(app)
+    .delete(`/products/${productOne._id}`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send()
+    .expect(200);
+  const product = await Product.findById(response.body._id);
+  expect(product).toBeNull();
+});
+
+test('Should not delete product if unauthenticated', async () => {
+  await request(app)
+    .delete(`/products/${productOne._id}`)
+    .send()
+    .expect(401);
+  const product = await Product.findById(productOne._id);
+  expect(product).not.toBeNull();
+});
+
+test('Should not delete other users product', async () => {
+  await request(app)
+    .delete(`/products/${productOne._id}`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send()
+    .expect(404);
+  const product = await Product.findById(productOne._id);
+  expect(product).not.toBeNull();
+});
+
+test('Should not update other users product', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send({
+      name: 'Cool mushrooms',
+    })
+    .expect(404);
+  const product = await Product.findById(productOne._id);
+  expect(product.name).not.toBe('Cool mushrooms');
+});
+
+test('Should fetch product by id', async () => {
+  await request(app)
+    .get(`/products/${productOne._id}`)
+    .send()
+    .expect(200);
+});
+
+test('Should fetch only new products', async () => {
+  const response = await request(app)
+    .get(`/products?condition=new`)
+    .send()
+    .expect(200);
+  expect(response.body).toHaveLength(2);
+});
+
+test('Should sort products by name descending', async () => {
+  const response = await request(app)
+    .get(`/products?sortBy=name:desc`)
+    .send()
+    .expect(200);
+  expect(response.body[0].name).toBe('Wellingtons');
+});
+
+test('Should sort products by price ascending', async () => {
+  const response = await request(app)
+    .get(`/products?sortBy=price:asc`)
+    .send()
+    .expect(200);
+  expect(response.body[1].price).toBeGreaterThan(response.body[0].price);
+});
+
+test('Should sort products by price descending', async () => {
+  const response = await request(app)
+    .get(`/products?sortBy=price:desc`)
+    .send()
+    .expect(200);
+  expect(response.body[0].price).toBeGreaterThan(response.body[1].price);
+});
+
+test('Should sort products by price descending and filter these above $10', async () => {
+  const response = await request(app)
+    .get(`/products?sortBy=price:desc&minPrice=10`)
+    .send()
+    .expect(200);
+  expect(response.body[0].price).toBeGreaterThan(response.body[1].price);
+  response.body.forEach(({ price }) => {
+    expect(price).toBeGreaterThanOrEqual(10);
+  });
+});
+
+test('Should fetch first two products', async () => {
+  const response = await request(app)
+    .get(`/products?limit=2`)
+    .send()
+    .expect(200);
+  expect(response.body).toHaveLength(2);
+});
+
+test('Should fetch last product', async () => {
+  const response = await request(app)
+    .get(`/products?limit=1&skip=2`)
+    .send()
+    .expect(200);
+  expect(response.body[0].name).toBe('Wellingtons');
+});
+
+test('Should upload photo for first product', async () => {
+  await request(app)
+    .post(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .attach('photo', 'tests/fixtures/mushrooms.jpg')
+    .expect(200);
+  const product = await Product.findById(productOne._id);
+  expect(product.photo).toEqual(expect.any(Buffer));
+});
+
+test('Should not upload photo for first product by not a seller', async () => {
+  await request(app)
+    .post(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .attach('photo', 'tests/fixtures/mushrooms.jpg')
+    .expect(400);
+  const product = await Product.findById(productOne._id);
+  expect(product.photo).toBe(undefined);
+});
+
+test('Should delete photo of first product', async () => {
+  await request(app)
+    .post(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .attach('photo', 'tests/fixtures/mushrooms.jpg')
+    .expect(200);
+  await request(app)
+    .delete(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send()
+    .expect(200);
+  const product = await Product.findById(productOne._id);
+  expect(product.photo).toBe(undefined);
+});
+
+test('Should not delete photo of first product by not a seller', async () => {
+  await request(app)
+    .post(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .attach('photo', 'tests/fixtures/mushrooms.jpg')
+    .expect(200);
+  await request(app)
+    .delete(`/products/${productOne._id}/photo`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send()
+    .expect(404);
+  const product = await Product.findById(productOne._id);
+  expect(product.photo).toEqual(expect.any(Buffer));
 });
