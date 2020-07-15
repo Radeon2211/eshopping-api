@@ -17,6 +17,7 @@ const userOne = {
   city: 'Białystok',
   country: 'Poland',
   phone: '123456789',
+  contacts: ['email', 'phone'],
   tokens: [{
     token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET),
   }],
@@ -35,38 +36,64 @@ const userTwo = {
   city: 'Białystok',
   country: 'Poland',
   phone: '987654321',
+  contacts: [],
   tokens: [{
     token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
   }],
 };
 
+const productOneId = new mongoose.Types.ObjectId();
 const productOne = {
-  _id: new mongoose.Types.ObjectId(),
+  _id: productOneId,
   name: 'Mushrooms',
   description: 'Healthy mushrooms',
-  price: 0.50,
+  price: 0.5,
   quantity: 1000,
   seller: userOneId,
 };
 
+const productTwoId = new mongoose.Types.ObjectId();
 const productTwo = {
-  _id: new mongoose.Types.ObjectId(),
+  _id: productTwoId,
   name: 'Knife for cutting mushrooms',
   description: 'Thanks to this knife you will be able to collect mushrooms super fastly',
-  price: 12.00,
+  price: 12,
   condition: 'new',
   quantity: 1,
   seller: userTwoId,
 };
 
+const productThreeId = new mongoose.Types.ObjectId();
 const productThree = {
-  _id: new mongoose.Types.ObjectId(),
+  _id: productThreeId,
   name: 'Wellingtons',
   description: 'Wellingtons that are waterproof and super cool for collecting mushrooms',
-  price: 30.00,
+  price: 30,
   condition: 'new',
   quantity: 1,
   seller: userTwoId,
+};
+
+const orderOne = {
+  seller: userTwoId,
+  buyer: userOneId,
+  overallPrice: 42,
+  products: [
+    {
+      _id: productTwoId,
+      name: 'Knife for cutting mushrooms',
+      price: 12,
+      quantity: 1,
+      totalPrice: 12,
+    },
+    {
+      _id: productThreeId,
+      name: 'Wellingtons',
+      price: 30,
+      quantity: 1,
+      totalPrice: 30,
+    },
+  ],
 };
 
 const setupDatabase = async () => {
@@ -78,11 +105,13 @@ const setupDatabase = async () => {
   await new Product(productOne).save();
   await new Product(productTwo).save();
   await new Product(productThree).save();
+  await new Order(orderOne).save();
 };
 
 module.exports = {
   userOneId,
   userOne,
+  userTwoId,
   userTwo,
   productOne,
   productTwo,

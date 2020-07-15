@@ -23,8 +23,14 @@ router.post('/products', auth, async (req, res) => {
 router.get('/products', async (req, res) => {
   const match = {};
   const sort = {};
+  if (req.query.seller) {
+    match.seller = req.query.seller;
+  }
   if (req.query.condition) {
     match.condition = req.query.condition;
+  }
+  if (req.query.name) {
+    match.name = new RegExp(req.query.name, 'gi');
   }
   match.price = {
     $gte: req.query.minPrice || 0,
@@ -40,7 +46,16 @@ router.get('/products', async (req, res) => {
       skip: parseInt(req.query.skip),
       sort,
     });
-    res.send(products);
+    const productCount = await Product.countDocuments(match);
+    const productPrices = await Product.aggregate([
+      { $match: match },
+      { $group: {
+        _id: null,
+        minPrice: { $min: "$price" },
+        maxPrice: { $max: "$price" }
+      } },
+    ]);
+    res.send({ products, productCount, productPrices });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -58,7 +73,7 @@ router.get('/products/:id', async (req, res) => {
   }
 });
 
-router.patch('/products/:id', auth, async (req, res) => {
+router.patch('/products/:id/seller', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -73,6 +88,20 @@ router.patch('/products/:id', auth, async (req, res) => {
     updates.forEach((update) => {
       product[update] = req.body[update];
     });
+    await product.save();
+    res.send(product);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.patch('/products/:id/buyer', auth, async (req, res) => {
+  try {
+    const product = await Product.findOne({ _id: req.params.id });
+    if (!product) {
+      return res.status(404).send();
+    }
+    product.quantity = product.quantity - req.body.quantityPurchased;
     await product.save();
     res.send(product);
   } catch (err) {

@@ -75,6 +75,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  contacts: [{
+    type: String,
+  }],
   tokens: [{
     token: {
       type: String,
@@ -94,10 +97,17 @@ userSchema.methods.toJSON = function() {
 };
 
 userSchema.methods.getPublicProfile = function() {
-  const { email, username } = this;
+  const { email, username, phone, contacts } = this;
+  const extraInfo = {};
+  if (contacts.includes('email')) {
+    extraInfo.email = email;
+  }
+  if (contacts.includes('phone')) {
+    extraInfo.phone = phone;
+  }
   const publicProfile = {
-    email,
     username,
+    ...extraInfo,
   };
   return publicProfile;
 };

@@ -12,7 +12,7 @@ test('Should create product', async () => {
     .send({
       name: 'Mega mushrooms',
       description: 'Healthy mega mushrooms',
-      price: 1.50,
+      price: 1.5,
       quantity: 1000,
       seller: userOneId,
     })
@@ -27,7 +27,7 @@ test('Should fetch three products', async () => {
     .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
     .send()
     .expect(200);
-  expect(response.body).toHaveLength(3);
+  expect(response.body.products).toHaveLength(3);
 });
 
 test('Should not second user delete the first task', async () => {
@@ -83,9 +83,33 @@ test('Should not delete other users product', async () => {
   expect(product).not.toBeNull();
 });
 
-test('Should not update other users product', async () => {
+test('Should update product', async () => {
   await request(app)
-    .patch(`/products/${productOne._id}`)
+    .patch(`/products/${productOne._id}/seller`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      name: 'Cool mushrooms',
+    })
+    .expect(200);
+  const product = await Product.findById(productOne._id);
+  expect(product.name).toBe('Cool mushrooms');
+});
+
+test('Should update other user product', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}/buyer`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send({
+      quantityPurchased: 10,
+    })
+    .expect(200);
+  const product = await Product.findById(productOne._id);
+  expect(product.quantity).toBe(990);
+});
+
+test('Should not update other user product', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}/seller`)
     .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
     .send({
       name: 'Cool mushrooms',
@@ -96,10 +120,27 @@ test('Should not update other users product', async () => {
 });
 
 test('Should fetch product by id', async () => {
-  await request(app)
+  const response = await request(app)
     .get(`/products/${productOne._id}`)
     .send()
     .expect(200);
+  expect(response.body._id).not.toBeNull();
+});
+
+test('Should fetch knife', async () => {
+  const response = await request(app)
+    .get(`/products?name=knife`)
+    .send()
+    .expect(200);
+  expect(response.body.products[0].name).toBe('Knife for cutting mushrooms');
+});
+
+test('Should fetch last product', async () => {
+  const response = await request(app)
+    .get(`/products?limit=1&skip=2`)
+    .send()
+    .expect(200);
+  expect(response.body.products[0].name).toBe('Wellingtons');
 });
 
 test('Should fetch only new products', async () => {
@@ -107,7 +148,7 @@ test('Should fetch only new products', async () => {
     .get(`/products?condition=new`)
     .send()
     .expect(200);
-  expect(response.body).toHaveLength(2);
+  expect(response.body.products).toHaveLength(2);
 });
 
 test('Should sort products by name descending', async () => {
@@ -115,7 +156,7 @@ test('Should sort products by name descending', async () => {
     .get(`/products?sortBy=name:desc`)
     .send()
     .expect(200);
-  expect(response.body[0].name).toBe('Wellingtons');
+  expect(response.body.products[0].name).toBe('Wellingtons');
 });
 
 test('Should sort products by price ascending', async () => {
@@ -123,7 +164,7 @@ test('Should sort products by price ascending', async () => {
     .get(`/products?sortBy=price:asc`)
     .send()
     .expect(200);
-  expect(response.body[1].price).toBeGreaterThan(response.body[0].price);
+  expect(response.body.products[1].price).toBeGreaterThan(response.body.products[0].price);
 });
 
 test('Should sort products by price descending', async () => {
@@ -131,7 +172,7 @@ test('Should sort products by price descending', async () => {
     .get(`/products?sortBy=price:desc`)
     .send()
     .expect(200);
-  expect(response.body[0].price).toBeGreaterThan(response.body[1].price);
+  expect(response.body.products[0].price).toBeGreaterThan(response.body.products[1].price);
 });
 
 test('Should sort products by price descending and filter these above $10', async () => {
@@ -139,8 +180,8 @@ test('Should sort products by price descending and filter these above $10', asyn
     .get(`/products?sortBy=price:desc&minPrice=10`)
     .send()
     .expect(200);
-  expect(response.body[0].price).toBeGreaterThan(response.body[1].price);
-  response.body.forEach(({ price }) => {
+  expect(response.body.products[0].price).toBeGreaterThan(response.body.products[1].price);
+  response.body.products.forEach(({ price }) => {
     expect(price).toBeGreaterThanOrEqual(10);
   });
 });
@@ -150,15 +191,16 @@ test('Should fetch first two products', async () => {
     .get(`/products?limit=2`)
     .send()
     .expect(200);
-  expect(response.body).toHaveLength(2);
+  expect(response.body.products).toHaveLength(2);
 });
 
-test('Should fetch last product', async () => {
+test('Should fetch last product, and 3 as productCount', async () => {
   const response = await request(app)
     .get(`/products?limit=1&skip=2`)
     .send()
     .expect(200);
-  expect(response.body[0].name).toBe('Wellingtons');
+  expect(response.body.products[0].name).toBe('Wellingtons');
+  expect(response.body.productCount).toBe(3);
 });
 
 test('Should upload photo for first product', async () => {

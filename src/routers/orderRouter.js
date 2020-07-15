@@ -5,14 +5,16 @@ const router = new express.Router();
 
 router.post('/orders', auth, (req, res) => {
   try {
+    const orders = [];
     req.body.forEach(async (order) => {
       const newOrder = new Order({
         ...order,
         buyer: req.user._id,
       });
+      orders.push(newOrder);
       await newOrder.save();
     });
-    res.status(201).send();
+    res.status(201).send(orders);
   } catch (err) {
     res.status(400).send(err);
   }
