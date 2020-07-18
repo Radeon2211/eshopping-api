@@ -74,7 +74,9 @@ const productThree = {
   seller: userTwoId,
 };
 
+const orderOneId = new mongoose.Types.ObjectId();
 const orderOne = {
+  _id: orderOneId,
   seller: userTwoId,
   buyer: userOneId,
   overallPrice: 42,
@@ -94,6 +96,14 @@ const orderOne = {
       totalPrice: 30,
     },
   ],
+  deliveryAddress: {
+    firstName: 'Krzysztof',
+    lastName: 'Kononwicz',
+    street: 'Szkolna 17',
+    zipCode: '15-950',
+    city: 'Białystok',
+    country: 'Poland',
+  },
 };
 
 const setupDatabase = async () => {
@@ -115,5 +125,6 @@ module.exports = {
   userTwo,
   productOne,
   productTwo,
+  orderOne,
   setupDatabase,
 };

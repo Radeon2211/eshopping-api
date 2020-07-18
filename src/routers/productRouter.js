@@ -5,6 +5,7 @@ const imagemin = require('imagemin');
 const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
+const { createSortObject } = require('../utils/utilities');
 const router = new express.Router();
 
 router.post('/products', auth, async (req, res) => {
@@ -22,7 +23,6 @@ router.post('/products', auth, async (req, res) => {
 
 router.get('/products', async (req, res) => {
   const match = {};
-  const sort = {};
   if (req.query.seller) {
     match.seller = req.query.seller;
   }
@@ -36,10 +36,7 @@ router.get('/products', async (req, res) => {
     $gte: req.query.minPrice || 0,
     $lte: req.query.maxPrice || Infinity,
   }
-  if (req.query.sortBy) {
-    const parts = req.query.sortBy.split(':');
-    sort[parts[0]] = parts[1] === 'asc' ? 1 : -1;
-  }
+  const sort = createSortObject(req);
   try {
     const products = await Product.find(match, null, {
       limit: parseInt(req.query.limit),
@@ -51,8 +48,8 @@ router.get('/products', async (req, res) => {
       { $match: match },
       { $group: {
         _id: null,
-        minPrice: { $min: "$price" },
-        maxPrice: { $max: "$price" }
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' }
       } },
     ]);
     res.send({ products, productCount, productPrices });
@@ -101,7 +98,18 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
     if (!product) {
       return res.status(404).send();
     }
-    product.quantity = product.quantity - req.body.quantityPurchased;
+    if (product.seller.equals(req.user._id)) {
+      return res.status(403).send();
+    }
+    if (product.quantity < +req.body.quantityPurchased) {
+      throw new Error({ error: `There are not that many pieces available anymore. Since the start of the transaction, the number of pieces has decreased` });
+    }
+    product.quantity = product.quantity - +req.body.quantityPurchased;
+    product.quantitySold = product.quantitySold + +req.body.quantityPurchased;
+    if (product.quantity <= 0) {
+      await product.remove();
+      return res.send();
+    }
     await product.save();
     res.send(product);
   } catch (err) {
@@ -159,7 +167,7 @@ router.get('/products/:id/photo', async (req, res) => {
     if (!product || !product.photo) {
       throw new Error();
     }
-    res.set('Content-Type', 'image/png');
+    res.set('Content-Type', 'image/jpeg');
     res.send(product.photo);
   } catch (err) {
     res.status(404).send();

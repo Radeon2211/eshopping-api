@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     validate(value) {
       if (!validator.isPostalCode(value, 'any')) {
-        throw new Error("Enter valid zip code");
+        throw new Error('Enter valid zip code');
       }
     }
   },

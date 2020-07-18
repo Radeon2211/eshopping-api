@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
-const { userOneId, userOne, userTwo, productOne, productTwo, setupDatabase } = require('./fixtures/db');
+const { userOneId, userOne, userTwo, productOne, setupDatabase } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
 
@@ -105,6 +105,44 @@ test('Should update other user product', async () => {
     .expect(200);
   const product = await Product.findById(productOne._id);
   expect(product.quantity).toBe(990);
+  expect(product.quantitySold).toBe(10);
+});
+
+test('Should not update (buy) own product', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}/buyer`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      quantityPurchased: 10,
+    })
+    .expect(403);
+  const product = await Product.findById(productOne._id);
+  expect(product.quantity).toBe(1000);
+  expect(product.quantitySold).toBe(0);
+});
+
+test('Should delete product after buy', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}/buyer`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send({
+      quantityPurchased: 1000,
+    })
+    .expect(200);
+  const product = await Product.findById(productOne._id);
+  expect(product).toBeNull();
+});
+
+test('Should send 400 error code due to not enough pieces', async () => {
+  await request(app)
+    .patch(`/products/${productOne._id}/buyer`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send({
+      quantityPurchased: 1001,
+    })
+    .expect(400);
+  const product = await Product.findById(productOne._id);
+  expect(product).not.toBeNull();
 });
 
 test('Should not update other user product', async () => {
