@@ -173,14 +173,38 @@ test('Should not update user if unauthenticated', async () => {
     .expect(401);
 });
 
-test('Should not update user with invalid password', async () => {
+test('Should not update user with invalid current credentials', async () => {
   await request(app)
     .patch('/users/me')
     .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
     .send({
-      password: 'pass',
+      currentEmail: 'user1@wp.pl',
+      currentPassword: 'incorrectPassword',
+      password: 'password',
     })
     .expect(400);
+});
+
+test('Should not update user without current credentials', async () => {
+  await request(app)
+    .patch('/users/me')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      password: 'password',
+    })
+    .expect(400);
+});
+
+test('Should update user with current credentials', async () => {
+  await request(app)
+    .patch('/users/me')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      currentEmail: 'user1@wp.pl',
+      currentPassword: 'Pa$$w0rd',
+      password: 'password',
+    })
+    .expect(200);
 });
 
 test('Should not delete user if unauthenticated', async () => {

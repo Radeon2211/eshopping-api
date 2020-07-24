@@ -112,6 +112,20 @@ userSchema.methods.getPublicProfile = function() {
   return publicProfile;
 };
 
+userSchema.methods.checkCurrentCredentials = async function(updates, data) {
+  const user = this;
+  if (!data.currentEmail || !data.currentPassword) {
+    throw new Error('You must provide current credentials');
+  }
+  const isCorrectEmail = data.currentEmail === user.email;
+  const isCorrectPassword = await bcrypt.compare(data.currentPassword, user.password);
+  if (!isCorrectEmail || !isCorrectPassword) {
+    throw new Error('Current credentials are incorrect');
+  }
+  const correctedUpdates = updates.filter((update) => update !== 'currentEmail' && update !== 'currentPassword');
+  return correctedUpdates;
+};
+
 userSchema.methods.generateAuthToken = async function() {
   const user = this;
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET);

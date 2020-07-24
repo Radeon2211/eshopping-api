@@ -52,13 +52,16 @@ router.get('/users/:id', async (req, res) => {
 });
 
 router.patch('/users/me', auth, async (req, res) => {
-  const updates = Object.keys(req.body);
+  let updates = Object.keys(req.body);
   const allowedUpdates = ['email', 'password', 'firstName', 'lastName', 'street', 'zipCode', 'country', 'city', 'phone', 'contacts'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-  if (!isValidOperation) {
-    return res.status(400).send({ error: `You can't change these data` });
-  }
   try {
+    if (updates.includes('email') || updates.includes('password')) {
+      updates = await req.user.checkCurrentCredentials(updates, req.body);
+    }
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+    if (!isValidOperation) {
+      return res.status(400).send({ error: `You can't change these data` });
+    }
     updates.forEach((update) => {
       req.user[update] = req.body[update];
     });
