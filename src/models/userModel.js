@@ -78,6 +78,17 @@ const userSchema = new mongoose.Schema({
   contacts: [{
     type: String,
   }],
+  cart: [{
+    quantity: {
+      type: Number,
+      required: true,
+    },
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'Product',
+    },
+  }],
   tokens: [{
     token: {
       type: String,
