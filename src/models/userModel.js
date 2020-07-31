@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
 const Order = require('./orderModel');
 
@@ -9,8 +10,9 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: 'Email address is already taken',
     trim: true,
+    uniqueCaseInsensitive: true,
     lowercase: true,
     validate(value) {
       if (!validator.isEmail(value)) {
@@ -21,7 +23,7 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true,
+    unique: 'Username is already taken',
     minlength: 3,
     maxlength: 20,
     trim: true,
@@ -98,6 +100,8 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+userSchema.plugin(uniqueValidator);
 
 userSchema.methods.toJSON = function() {
   const user = this;
