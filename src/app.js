@@ -17,9 +17,7 @@ const csrfProtection = csrf({
   cookie: true,
 });
 
-app.use(csrfProtection);
-
-app.get('/csrf-token', (req, res) => {
+app.get('/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 

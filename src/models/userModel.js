@@ -150,13 +150,17 @@ userSchema.methods.generateAuthToken = async function() {
 };
 
 userSchema.statics.findByCredentials = async (email, password) => {
+  function myError(message) {
+    this.message = message;
+  }
+  myError.prototype = new Error();
   const user = await User.findOne({ email });
   if (!user) {
-    throw new Error({ err: 'Incorrect credentials' });
+    throw new myError('You entered incorrect credentials');
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error({ err: 'Incorrect credentials' });
+    throw new myError('You entered incorrect credentials');
   }
   return user;
 };
