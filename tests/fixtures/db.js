@@ -8,7 +8,7 @@ const userOneId = new mongoose.Types.ObjectId();
 const userOne = {
   _id: userOneId,
   firstName: 'Krzysztof',
-  lastName: 'Kononwicz',
+  lastName: 'Kononowicz',
   username: 'Konon',
   email: 'user1@wp.pl',
   password: 'Pa$$w0rd',
@@ -39,6 +39,26 @@ const userTwo = {
   contacts: [],
   tokens: [{
     token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
+  }],
+};
+
+const userThreeId = new mongoose.Types.ObjectId();
+const userThree = {
+  _id: userThreeId,
+  firstName: 'Jarosław',
+  lastName: 'Andrzejewski',
+  username: 'mexicano',
+  email: 'user3@wp.pl',
+  password: 'Pa$$w0rd',
+  street: 'Szkolna 17',
+  zipCode: '15-950',
+  city: 'Białystok',
+  country: 'Poland',
+  phone: '123456789',
+  contacts: ['email', 'phone'],
+  role: 'admin',
+  tokens: [{
+    token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
   }],
 };
 
@@ -112,6 +132,7 @@ const setupDatabase = async () => {
   await Order.deleteMany();
   await new User(userOne).save();
   await new User(userTwo).save();
+  await new User(userThree).save();
   await new Product(productOne).save();
   await new Product(productTwo).save();
   await new Product(productThree).save();
@@ -123,6 +144,7 @@ module.exports = {
   userOne,
   userTwoId,
   userTwo,
+  userThree,
   productOne,
   productTwo,
   orderOne,

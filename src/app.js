@@ -9,7 +9,10 @@ const orderRouter = require('./routers/orderRouter');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://radeon2211.github.io'],
+  credentials: true,
+}));
 
 app.use(cookieParser());
 

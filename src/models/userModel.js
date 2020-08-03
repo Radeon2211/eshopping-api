@@ -91,6 +91,9 @@ const userSchema = new mongoose.Schema({
       ref: 'Product',
     },
   }],
+  role: {
+    type: String,
+  },
   tokens: [{
     token: {
       type: String,
@@ -108,6 +111,7 @@ userSchema.methods.toJSON = function() {
   const userObject = user.toObject();
   delete userObject.password;
   delete userObject.tokens;
+  delete userObject.role;
   return userObject;
 };
 

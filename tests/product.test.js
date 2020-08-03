@@ -1,14 +1,14 @@
 const request = require('supertest');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
-const { userOneId, userOne, userTwo, productOne, setupDatabase } = require('./fixtures/db');
+const { userOneId, userOne, userTwo, userThree, productOne, setupDatabase } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
 
 test('Should create product', async () => {
   const response = await request(app)
     .post('/products')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       name: 'Mega mushrooms',
       description: 'Healthy mega mushrooms',
@@ -24,7 +24,7 @@ test('Should create product', async () => {
 test('Should fetch three products', async () => {
   const response = await request(app)
     .get('/products')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send()
     .expect(200);
   expect(response.body.products).toHaveLength(3);
@@ -33,7 +33,7 @@ test('Should fetch three products', async () => {
 test('Should not second user delete the first task', async () => {
   await request(app)
     .delete(`/prodcuts/${productOne._id}`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send()
     .expect(404);
   const product = await Product.findById(productOne._id);
@@ -43,7 +43,7 @@ test('Should not second user delete the first task', async () => {
 test('Should not create product with invalid quantity', async () => {
   await request(app)
     .post(`/products`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       name: 'Mega mushrooms',
       description: 'Healthy mega mushrooms',
@@ -57,7 +57,7 @@ test('Should not create product with invalid quantity', async () => {
 test('Should delete authenticated users product', async () => {
   const response = await request(app)
     .delete(`/products/${productOne._id}`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send()
     .expect(200);
   const product = await Product.findById(response.body._id);
@@ -76,9 +76,9 @@ test('Should not delete product if unauthenticated', async () => {
 test('Should not delete other users product', async () => {
   await request(app)
     .delete(`/products/${productOne._id}`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send()
-    .expect(404);
+    .expect(403);
   const product = await Product.findById(productOne._id);
   expect(product).not.toBeNull();
 });
@@ -86,7 +86,7 @@ test('Should not delete other users product', async () => {
 test('Should update product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/seller`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       name: 'Cool mushrooms',
     })
@@ -98,7 +98,7 @@ test('Should update product', async () => {
 test('Should update other user product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantityPurchased: 10,
     })
@@ -111,7 +111,7 @@ test('Should update other user product', async () => {
 test('Should not update (buy) own product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       quantityPurchased: 10,
     })
@@ -124,7 +124,7 @@ test('Should not update (buy) own product', async () => {
 test('Should delete product after buy', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantityPurchased: 1000,
     })
@@ -136,7 +136,7 @@ test('Should delete product after buy', async () => {
 test('Should send 400 error code due to not enough pieces', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantityPurchased: 1001,
     })
@@ -148,7 +148,7 @@ test('Should send 400 error code due to not enough pieces', async () => {
 test('Should not update other user product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/seller`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       name: 'Cool mushrooms',
     })
@@ -244,7 +244,7 @@ test('Should fetch last product, and 3 as productCount', async () => {
 test('Should upload photo for first product', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .attach('photo', 'tests/fixtures/mushrooms.jpg')
     .expect(200);
   const product = await Product.findById(productOne._id);
@@ -254,7 +254,7 @@ test('Should upload photo for first product', async () => {
 test('Should not upload photo for first product by not a seller', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .attach('photo', 'tests/fixtures/mushrooms.jpg')
     .expect(400);
   const product = await Product.findById(productOne._id);
@@ -264,12 +264,12 @@ test('Should not upload photo for first product by not a seller', async () => {
 test('Should delete photo of first product', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .attach('photo', 'tests/fixtures/mushrooms.jpg')
     .expect(200);
   await request(app)
     .delete(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send()
     .expect(200);
   const product = await Product.findById(productOne._id);
@@ -279,14 +279,24 @@ test('Should delete photo of first product', async () => {
 test('Should not delete photo of first product by not a seller', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .attach('photo', 'tests/fixtures/mushrooms.jpg')
     .expect(200);
   await request(app)
     .delete(`/products/${productOne._id}/photo`)
-    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send()
-    .expect(404);
+    .expect(403);
   const product = await Product.findById(productOne._id);
   expect(product.photo).toEqual(expect.any(Buffer));
+});
+
+test('Should admin delete other user product', async () => {
+  const response = await request(app)
+    .delete(`/products/${productOne._id}`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .send()
+    .expect(200);
+  const product = await Product.findById(response.body._id);
+  expect(product).toBe(null);
 });

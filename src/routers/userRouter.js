@@ -68,13 +68,33 @@ router.patch('/users/me', auth, async (req, res) => {
     }
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
     if (!isValidOperation) {
-      return res.status(400).send({ error: `You can't change these data` });
+      return res.status(400).send({ message: `You can't change these data` });
     }
     updates.forEach((update) => {
       req.user[update] = req.body[update];
     });
     await req.user.save();
     res.send(req.user);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.patch('/users/single-user', auth, async (req, res) => {
+  const role = req.body.role;
+  try {
+    if (req.user.role !== 'admin') {
+      throw new Error({ message: 'You are not able to do that' });
+    }
+    const user = await User.findOne({ email: req.body.email });
+    if (!role && user.role) {
+      user.role = undefined;
+    }
+    if (role) {
+      user.role = role;
+    }
+    await user.save();
+    res.send();
   } catch (err) {
     res.status(400).send(err);
   }

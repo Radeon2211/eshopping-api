@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const User = require('../src/models/userModel');
-const { userOneId, userTwoId, userOne, setupDatabase } = require('./fixtures/db');
+const { userOneId, userTwoId, userOne, userTwo, userThree, setupDatabase } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
 
@@ -10,7 +10,7 @@ test('Should signup a new user', async () => {
     firstName: 'Mr.',
     lastName: 'Mexicano',
     username: 'Mexicano',
-    email: 'user3@wp.pl',
+    email: 'user4@wp.pl',
     password: 'Pa$$w0rd',
     street: 'Szkolna 17',
     zipCode: '15-950',
@@ -25,25 +25,24 @@ test('Should signup a new user', async () => {
       firstName: 'Mr.',
       lastName: 'Mexicano',
       username: 'Mexicano',
-      email: 'user3@wp.pl',
+      email: 'user4@wp.pl',
       street: 'Szkolna 17',
       zipCode: '15-950',
       city: 'Białystok',
       country: 'Poland',
       phone: '123459876',
     },
-    token: user.tokens[0].token,
   });
   expect(user.password).not.toBe('Pa$$w0rd');
 });
 
 test('Should login existing user', async () => {
-  const response = await request(app).post('/users/login').send({
+  await request(app).post('/users/login').send({
     email: 'user1@wp.pl',
     password: 'Pa$$w0rd',
   }).expect(200);
   const user = await User.findById(userOneId);
-  expect(response.body.token).toBe(user.tokens[1].token);
+  expect(user.tokens).toHaveLength(2);
 });
 
 test('Should not login non existing user', async () => {
@@ -54,7 +53,7 @@ test('Should not login non existing user', async () => {
 });
 
 test('Should get profile for user', async () => {
-  await request(app).get(`/users/me`).set('Authorization', `Bearer ${userOne.tokens[0].token}`).send().expect(200);
+  await request(app).get(`/users/me`).set('Cookie', [`token=${userOne.tokens[0].token}`]).send().expect(200);
 });
 
 test('Should not get profile for unauthenticated user', async () => {
@@ -77,7 +76,7 @@ test('Should get username, email and phone of the user', async () => {
 });
 
 test('Should delete user profile', async () => {
-  await request(app).delete(`/users/me`).set('Authorization', `Bearer ${userOne.tokens[0].token}`).send().expect(200);
+  await request(app).delete(`/users/me`).set('Cookie', [`token=${userOne.tokens[0].token}`]).send().expect(200);
   const user = await User.findById(userOneId);
   expect(user).toBeNull();
 });
@@ -89,7 +88,7 @@ test('Should not delete profile for unauthenticated user', async () => {
 test('Should update valid user fields', async () => {
   await request(app)
     .patch('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       phone: '987612345',
     })
@@ -101,7 +100,7 @@ test('Should update valid user fields', async () => {
 test('Should not update invalid user fields', async () => {
   await request(app)
     .patch('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       username: 'newUsername',
     })
@@ -176,7 +175,7 @@ test('Should not update user if unauthenticated', async () => {
 test('Should not update user with invalid current credentials', async () => {
   await request(app)
     .patch('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       currentEmail: 'user1@wp.pl',
       currentPassword: 'incorrectPassword',
@@ -188,7 +187,7 @@ test('Should not update user with invalid current credentials', async () => {
 test('Should not update user without current credentials', async () => {
   await request(app)
     .patch('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       password: 'password',
     })
@@ -198,7 +197,7 @@ test('Should not update user without current credentials', async () => {
 test('Should update user with current credentials', async () => {
   await request(app)
     .patch('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       currentEmail: 'user1@wp.pl',
       currentPassword: 'Pa$$w0rd',
@@ -212,4 +211,20 @@ test('Should not delete user if unauthenticated', async () => {
     .delete('/users/me')
     .send()
     .expect(401);
+});
+
+test('Should admin update other user role to admin', async () => {
+  await request(app)
+    .patch('/users/single-user')
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .send({ email: 'user1@wp.pl', role: 'admin' })
+    .expect(200);
+});
+
+test('Should not admin not update other user role to admin', async () => {
+  await request(app)
+    .patch('/users/single-user')
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({ email: 'user1@wp.pl', role: 'admin' })
+    .expect(400);
 });

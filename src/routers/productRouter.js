@@ -119,10 +119,14 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
 
 router.delete('/products/:id', auth, async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({ _id: req.params.id, seller: req.user._id });
+    const product = await Product.findOne({ _id: req.params.id });
     if (!product) {
       return res.status(404).send();
     }
+    if (!product.seller.equals(req.user._id) && req.user.role !== 'admin') {
+      return res.status(403).send();
+    }
+    product.deleteOne();
     res.send(product);
   } catch (err) {
     res.status(500).send(err);
@@ -176,15 +180,18 @@ router.get('/products/:id/photo', async (req, res) => {
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
+    const product = await Product.findOne({ _id: req.params.id });
     if (!product || !product.photo) {
-      throw new Error();
+      return res.status(404).send();
+    }
+    if (!product.seller.equals(req.user._id) && req.user.role !== 'admin') {
+      return res.status(403).send();
     }
     product.photo = undefined;
     product.save();
     res.send();
   } catch (err) {
-    res.status(404).send();
+    res.status(500).send();
   }
 });
 
