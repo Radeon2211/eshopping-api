@@ -15,7 +15,7 @@ router.post('/products', auth, async (req, res) => {
   });
   try {
     await product.save();
-    res.status(201).send(product);
+    res.status(201).send({ product });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -139,7 +139,7 @@ const upload = multer({
   },
   fileFilter(req, file, cb) {
     if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
-      return cb(new Error('Please upload a JPG, JPEG or PNG'));
+      return cb(new Error('Please upload a JPG or PNG'));
     }
     cb(undefined, true);
   }
@@ -157,7 +157,7 @@ router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res
     }
     product.photo = miniBuffer;
     await product.save();
-    res.send();
+    res.send({ product });
   } catch (err) {
     res.status(400).send(err);
   }
