@@ -28,7 +28,7 @@ router.get('/products', async (req, res) => {
   }
   if (req.query.condition) {
     const conditionArray = req.query.condition.split(',');
-    match.condition = new RegExp(conditionArray.toString().replace(/, /g, '|'), 'gi');
+    match.condition = new RegExp(conditionArray.toString().replace(/,/g, '|'), 'gi');
   }
   if (req.query.name) {
     match.name = new RegExp(req.query.name, 'gi');
@@ -40,8 +40,8 @@ router.get('/products', async (req, res) => {
   const sort = createSortObject(req);
   try {
     const products = await Product.find(match, null, {
-      limit: 25,
-      skip: parseInt(req.query.p) * 25,
+      limit: 2,
+      skip: (parseInt(req.query.p) - 1) * 2,
       sort,
     });
     const productCount = await Product.countDocuments(match);
