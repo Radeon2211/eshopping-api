@@ -45,14 +45,23 @@ router.get('/products', async (req, res) => {
       sort,
     });
     const productCount = await Product.countDocuments(match);
+
+    const matchToPrices = {
+      ...match,
+      price: {
+        $gte: 0,
+        $lte: Infinity,
+      }
+    }
     const productPrices = await Product.aggregate([
-      { $match: match },
+      { $match: matchToPrices },
       { $group: {
         _id: null,
         minPrice: { $min: '$price' },
         maxPrice: { $max: '$price' }
       } },
     ]);
+
     res.send({ products, productCount, productPrices });
   } catch (err) {
     res.status(500).send(err);
