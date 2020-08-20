@@ -42,6 +42,9 @@ router.get('/products', async (req, res) => {
     const products = await Product.find(match, null, {
       limit: 2,
       skip: (parseInt(req.query.p) - 1) * 2,
+      collation: {
+        locale: 'en',
+      },
       sort,
     });
     const productCount = await Product.countDocuments(match);
