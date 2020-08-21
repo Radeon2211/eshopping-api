@@ -51,11 +51,10 @@ router.get('/products', async (req, res) => {
 
     const matchToPrices = {
       ...match,
-      price: {
-        $gte: 0,
-        $lte: Infinity,
-      }
-    }
+    };
+    delete matchToPrices.condition;
+    delete matchToPrices.price;
+
     const productPrices = await Product.aggregate([
       { $match: matchToPrices },
       { $group: {
