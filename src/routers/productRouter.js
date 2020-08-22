@@ -39,9 +39,10 @@ router.get('/products', async (req, res) => {
   }
   const sort = createSortObject(req);
   try {
+    const limit = +req.query.limit || 10;
     const products = await Product.find(match, null, {
-      limit: 2,
-      skip: (parseInt(req.query.p) - 1) * 2,
+      limit,
+      skip: ((+req.query.p) - 1) * limit,
       collation: {
         locale: 'en',
       },

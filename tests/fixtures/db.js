@@ -70,6 +70,7 @@ const productOne = {
   price: 0.5,
   quantity: 1000,
   seller: userOneId,
+  condition: 'not_applicable',
 };
 
 const productTwoId = new mongoose.Types.ObjectId();

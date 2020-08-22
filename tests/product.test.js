@@ -14,17 +14,16 @@ test('Should create product', async () => {
       description: 'Healthy mega mushrooms',
       price: 1.5,
       quantity: 1000,
-      seller: userOneId,
+      condition: 'not_applicable',
     })
     .expect(201);
-  const product = await Product.findById(response.body._id);
+  const product = await Product.findById(response.body.product._id);
   expect(product).not.toBeNull();
 });
 
 test('Should fetch three products', async () => {
   const response = await request(app)
-    .get('/products')
-    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .get('/products?limit=3')
     .send()
     .expect(200);
   expect(response.body.products).toHaveLength(3);
@@ -173,14 +172,6 @@ test('Should fetch knife', async () => {
   expect(response.body.products[0].name).toBe('Knife for cutting mushrooms');
 });
 
-test('Should fetch last product', async () => {
-  const response = await request(app)
-    .get(`/products?limit=1&skip=2`)
-    .send()
-    .expect(200);
-  expect(response.body.products[0].name).toBe('Wellingtons');
-});
-
 test('Should fetch only new products', async () => {
   const response = await request(app)
     .get(`/products?condition=new`)
@@ -234,7 +225,7 @@ test('Should fetch first two products', async () => {
 
 test('Should fetch last product, and 3 as productCount', async () => {
   const response = await request(app)
-    .get(`/products?limit=1&skip=2`)
+    .get(`/products?limit=1&p=3`)
     .send()
     .expect(200);
   expect(response.body.products[0].name).toBe('Wellingtons');
