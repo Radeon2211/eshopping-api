@@ -10,7 +10,7 @@ const orderRouter = require('./routers/orderRouter');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://radeon2211.github.io'],
+  origin: ['http://localhost:3000', 'http://192.168.1.109:3000', 'https://radeon2211.github.io'],
   credentials: true,
 }));
 
