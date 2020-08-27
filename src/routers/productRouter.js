@@ -73,7 +73,7 @@ router.get('/products', async (req, res) => {
 
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findOne({ _id: req.params.id }).populate('seller');
     if (!product) {
       return res.status(404).send();
     }
@@ -136,7 +136,7 @@ router.delete('/products/:id', auth, async (req, res) => {
     if (!product) {
       return res.status(404).send();
     }
-    if (!product.seller.equals(req.user._id) && req.user.role !== 'admin') {
+    if (!product.seller.equals(req.user._id) && !req.user.isAdmin) {
       return res.status(403).send();
     }
     product.deleteOne();

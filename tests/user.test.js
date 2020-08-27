@@ -213,18 +213,34 @@ test('Should not delete user if unauthenticated', async () => {
     .expect(401);
 });
 
-test('Should admin update other user role to admin', async () => {
+test('Should admin make other user admin', async () => {
   await request(app)
-    .patch('/users/single-user')
+    .patch('/users/add-admin')
     .set('Cookie', [`token=${userThree.tokens[0].token}`])
-    .send({ email: 'user1@wp.pl', role: 'admin' })
+    .send({ email: 'user1@wp.pl' })
     .expect(200);
 });
 
-test('Should not admin not update other user role to admin', async () => {
+test('Should not admin update other user to admin', async () => {
   await request(app)
-    .patch('/users/single-user')
+    .patch('/users/add-admin')
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-    .send({ email: 'user1@wp.pl', role: 'admin' })
+    .send({ email: 'user1@wp.pl' })
+    .expect(400);
+});
+
+test('Should admin remove other admin', async () => {
+  await request(app)
+    .patch('/users/remove-admin')
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .send({ email: 'user1@wp.pl' })
+    .expect(200);
+});
+
+test('Should not admin remove other admin', async () => {
+  await request(app)
+    .patch('/users/remove-admin')
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({ email: 'user1@wp.pl' })
     .expect(400);
 });

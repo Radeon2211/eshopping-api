@@ -91,8 +91,8 @@ const userSchema = new mongoose.Schema({
       ref: 'Product',
     },
   }],
-  role: {
-    type: String,
+  isAdmin: {
+    type: Boolean,
   },
   tokens: [{
     token: {
@@ -149,6 +149,10 @@ userSchema.methods.generateAuthToken = async function() {
   const user = this;
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET);
   user.tokens = user.tokens.concat({ token });
+  const tokensLength = user.tokens.length;
+  if (tokensLength > 10) {
+    user.tokens = user.tokens.slice(tokensLength - 10);
+  }
   await user.save();
   return token;
 };

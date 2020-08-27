@@ -56,7 +56,7 @@ const userThree = {
   country: 'Poland',
   phone: '123456789',
   contacts: ['email', 'phone'],
-  role: 'admin',
+  isAdmin: true,
   tokens: [{
     token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
   }],

@@ -43,7 +43,6 @@ router.get('/users/me', auth, async (req, res) => {
   } catch (err) {
     res.status(500).send();
   }
-
 });
 
 router.get('/users/:id', async (req, res) => {
@@ -80,19 +79,27 @@ router.patch('/users/me', auth, async (req, res) => {
   }
 });
 
-router.patch('/users/single-user', auth, async (req, res) => {
-  const role = req.body.role;
+router.patch('/users/add-admin', auth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!req.user.isAdmin) {
       throw new Error({ message: 'You are not able to do that' });
     }
     const user = await User.findOne({ email: req.body.email });
-    if (!role && user.role) {
-      user.role = undefined;
+    user.isAdmin = true;
+    await user.save();
+    res.send();
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.patch('/users/remove-admin', auth, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      throw new Error({ message: 'You are not able to do that' });
     }
-    if (role) {
-      user.role = role;
-    }
+    const user = await User.findOne({ email: req.body.email });
+    user.isAdmin = undefined;
     await user.save();
     res.send();
   } catch (err) {
