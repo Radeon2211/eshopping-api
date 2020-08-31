@@ -1,11 +1,13 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const multer = require('multer');
 const sharp = require('sharp');
 const imagemin = require('imagemin');
 const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
-const { createSortObject } = require('../utils/utilities');
+const getCurrentUser = require('../middleware/getCurrentUser');
+const { createSortObject, pages } = require('../utils/utilities');
 const router = new express.Router();
 
 router.post('/products', auth, async (req, res) => {
@@ -21,10 +23,28 @@ router.post('/products', auth, async (req, res) => {
   }
 });
 
-router.get('/products', async (req, res) => {
+router.get('/products', getCurrentUser, async (req, res) => {
   const match = {};
-  if (req.query.seller) {
-    match.seller = req.query.seller;
+  const page = req.query.page;
+  const seller = req.query.seller;
+  switch (page) {
+    case pages.ALL_PRODUCTS:
+      if (req.user) {
+        match.seller = {
+          $ne: mongoose.Types.ObjectId(req.user._id),
+        };
+      }
+      break;
+    case pages.MY_PRODUCTS:
+      if (req.user) {
+        match.seller = req.user._id;
+      }
+      break;
+    case pages.USER_PRODUCTS:
+      match.seller = seller;
+      break;
+    default:
+      break;
   }
   if (req.query.condition) {
     const conditionArray = req.query.condition.split(',');
