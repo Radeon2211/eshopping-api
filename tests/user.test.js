@@ -199,7 +199,6 @@ test('Should update user with current credentials', async () => {
     .patch('/users/me')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
-      currentEmail: 'user1@wp.pl',
       currentPassword: 'Pa$$w0rd',
       password: 'password',
     })

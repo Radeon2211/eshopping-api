@@ -133,15 +133,23 @@ userSchema.methods.getPublicProfile = function() {
 
 userSchema.methods.checkCurrentCredentials = async function(updates, data) {
   const user = this;
-  if (!data.currentEmail || !data.currentPassword) {
-    throw new Error('You must provide current credentials');
+  if (!data.currentPassword) {
+    throw new Error('You must provide current password');
   }
-  const isCorrectEmail = data.currentEmail === user.email;
-  const isCorrectPassword = await bcrypt.compare(data.currentPassword, user.password);
-  if (!isCorrectEmail || !isCorrectPassword) {
-    throw new Error('Current credentials are incorrect');
+  if (data.email === user.email) {
+    throw new Error('New email is the same as current email');
   }
-  const correctedUpdates = updates.filter((update) => update !== 'currentEmail' && update !== 'currentPassword');
+  const isPasswordCorrect = await bcrypt.compare(data.currentPassword, user.password);
+  if (!isPasswordCorrect) {
+    throw new Error('Current password is incorrect');
+  }
+  if (data.password) {
+    const isPasswordTheSame = await bcrypt.compare(data.password, user.password);
+    if (isPasswordTheSame) {
+      throw new Error('New password is the same as current password');
+    }
+  }
+  const correctedUpdates = updates.filter((update) => update !== 'currentPassword');
   return correctedUpdates;
 };
 

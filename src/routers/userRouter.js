@@ -73,9 +73,9 @@ router.patch('/users/me', auth, async (req, res) => {
       req.user[update] = req.body[update];
     });
     await req.user.save();
-    res.send(req.user);
+    res.send({ user: req.user });
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).send({ message: err.message });
   }
 });
 
