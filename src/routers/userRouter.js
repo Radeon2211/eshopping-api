@@ -109,6 +109,7 @@ router.patch('/users/remove-admin', auth, async (req, res) => {
 
 router.delete('/users/me', auth, async (req, res) => {
   try {
+    await req.user.checkCurrentPassword(req.body);
     await req.user.remove();
     res.send(req.user);
   } catch (err) {

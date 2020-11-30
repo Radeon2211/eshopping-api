@@ -153,6 +153,17 @@ userSchema.methods.checkCurrentCredentials = async function(updates, data) {
   return correctedUpdates;
 };
 
+userSchema.methods.checkCurrentPassword = async function(data) {
+  const user = this;
+  if (!data.currentPassword) {
+    throw new Error('You must provide current password');
+  }
+  const isPasswordCorrect = await bcrypt.compare(data.currentPassword, user.password);
+  if (!isPasswordCorrect) {
+    throw new Error('Current password is incorrect');
+  }
+};
+
 userSchema.methods.generateAuthToken = async function() {
   const user = this;
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET);
