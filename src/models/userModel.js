@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
 const Order = require('./orderModel');
+const { MyError } = require('../utils/utilities');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -134,19 +135,19 @@ userSchema.methods.getPublicProfile = function() {
 userSchema.methods.checkCurrentCredentials = async function(updates, data) {
   const user = this;
   if (!data.currentPassword) {
-    throw new Error('You must provide current password');
+    throw new MyError('You must provide current password');
   }
   if (data.email === user.email) {
-    throw new Error('New email is the same as current email');
+    throw new MyError('New email is the same as current email');
   }
   const isPasswordCorrect = await bcrypt.compare(data.currentPassword, user.password);
   if (!isPasswordCorrect) {
-    throw new Error('Current password is incorrect');
+    throw new MyError('Current password is incorrect');
   }
   if (data.password) {
     const isPasswordTheSame = await bcrypt.compare(data.password, user.password);
     if (isPasswordTheSame) {
-      throw new Error('New password is the same as current password');
+      throw new MyError('New password is the same as current password');
     }
   }
   const correctedUpdates = updates.filter((update) => update !== 'currentPassword');
@@ -156,11 +157,11 @@ userSchema.methods.checkCurrentCredentials = async function(updates, data) {
 userSchema.methods.checkCurrentPassword = async function(data) {
   const user = this;
   if (!data.currentPassword) {
-    throw new Error('You must provide current password');
+    throw new MyError('You must provide current password');
   }
   const isPasswordCorrect = await bcrypt.compare(data.currentPassword, user.password);
   if (!isPasswordCorrect) {
-    throw new Error('Current password is incorrect');
+    throw new MyError('Current password is incorrect');
   }
 };
 
@@ -177,17 +178,13 @@ userSchema.methods.generateAuthToken = async function() {
 };
 
 userSchema.statics.findByCredentials = async (email, password) => {
-  function myError(message) {
-    this.message = message;
-  }
-  myError.prototype = new Error();
   const user = await User.findOne({ email });
   if (!user) {
-    throw new myError('You entered incorrect credentials');
+    throw new MyError('You entered incorrect credentials');
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new myError('You entered incorrect credentials');
+    throw new MyError('You entered incorrect credentials');
   }
   return user;
 };

@@ -95,7 +95,7 @@ router.get('/products/:id', async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.id }).populate('seller');
     if (!product) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'Product not found' });
     }
     res.send(product);
   } catch (err) {
@@ -154,10 +154,10 @@ router.delete('/products/:id', auth, async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.id });
     if (!product) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'This product does not exist' });
     }
     if (!product.seller.equals(req.user._id) && !req.user.isAdmin) {
-      return res.status(403).send();
+      return res.status(403).send({ message: `You don't have permission to do this!` });
     }
     product.deleteOne();
     res.send(product);
@@ -186,7 +186,7 @@ router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res
     });
     const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
     if (!product) {
-      throw new Error();
+      throw new Error({ message: 'Product not found' });
     }
     product.photo = miniBuffer;
     await product.save();
@@ -194,8 +194,8 @@ router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res
   } catch (err) {
     res.status(400).send(err);
   }
-}, (error, req, res, next) => {
-  res.status(400).send({ error: error.message });
+}, (err, req, res, next) => {
+  res.status(400).send(err);
 });
 
 router.get('/products/:id/photo', async (req, res) => {

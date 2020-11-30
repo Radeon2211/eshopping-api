@@ -62,21 +62,21 @@ test('Should not get profile for unauthenticated user', async () => {
 
 test('Should get only username of the user', async () => {
   const response = await request(app).get(`/users/${userTwoId}`).send().expect(200);
-  const userInfoKeys = Object.keys(response.body);
+  const userInfoKeys = Object.keys(response.body.profile);
   expect(userInfoKeys).toHaveLength(1);
   expect(userInfoKeys[0]).toBe('username');
 });
 
 test('Should get username, email and phone of the user', async () => {
   const response = await request(app).get(`/users/${userOneId}`).send().expect(200);
-  expect(Object.keys(response.body)).toHaveLength(3);
+  expect(Object.keys(response.body.profile)).toHaveLength(3);
   expect(response.body.username).not.toBeNull();
   expect(response.body.email).not.toBeNull();
   expect(response.body.phone).not.toBeNull();
 });
 
 test('Should delete user profile', async () => {
-  await request(app).delete(`/users/me`).set('Cookie', [`token=${userOne.tokens[0].token}`]).send().expect(200);
+  await request(app).delete(`/users/me`).set('Cookie', [`token=${userOne.tokens[0].token}`]).send({ currentPassword: userOne.password }).expect(200);
   const user = await User.findById(userOneId);
   expect(user).toBeNull();
 });

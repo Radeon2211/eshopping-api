@@ -49,10 +49,10 @@ router.get('/users/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'User not found' });
     }
     const publicProfile = user.getPublicProfile();
-    res.send(publicProfile);
+    res.send({ profile: publicProfile });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -75,14 +75,14 @@ router.patch('/users/me', auth, async (req, res) => {
     await req.user.save();
     res.send({ user: req.user });
   } catch (err) {
-    res.status(400).send({ message: err.message });
+    res.status(400).send(err);
   }
 });
 
 router.patch('/users/add-admin', auth, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
-      throw new Error({ message: 'You are not able to do that' });
+      throw new Error('You are not able to do that');
     }
     const user = await User.findOne({ email: req.body.email });
     user.isAdmin = true;
@@ -96,7 +96,7 @@ router.patch('/users/add-admin', auth, async (req, res) => {
 router.patch('/users/remove-admin', auth, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
-      throw new Error({ message: 'You are not able to do that' });
+      throw new Error('You are not able to do that');
     }
     const user = await User.findOne({ email: req.body.email });
     user.isAdmin = undefined;
@@ -111,8 +111,12 @@ router.delete('/users/me', auth, async (req, res) => {
   try {
     await req.user.checkCurrentPassword(req.body);
     await req.user.remove();
-    res.send(req.user);
+    res.send({ user: req.user });
   } catch (err) {
+    if (err.message) {
+      res.status(400).send(err);
+      return;
+    }
     res.status(500).send(err);
   }
 });

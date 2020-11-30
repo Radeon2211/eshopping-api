@@ -13,7 +13,13 @@ const pages = {
   USER_PRODUCTS: 'USER_PRODUCTS',
 };
 
+function MyError(message) {
+  this.message = message;
+}
+MyError.prototype = new Error();
+
 module.exports = {
   createSortObject,
   pages,
+  MyError,
 };
