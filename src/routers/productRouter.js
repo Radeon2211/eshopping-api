@@ -108,10 +108,10 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
   const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
   if (!isValidOperation) {
-    return res.status(400).send({ error: 'Invalid updates!' });
+    return res.status(400).send({ message: `You can't change these data!` });
   }
   try {
-    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate('seller');
     if (!product) {
       return res.status(404).send();
     }
@@ -119,7 +119,7 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
       product[update] = req.body[update];
     });
     await product.save();
-    res.send(product);
+    res.send({ product });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -135,7 +135,7 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
       return res.status(403).send();
     }
     if (product.quantity < +req.body.quantityPurchased) {
-      throw new Error({ error: `There are not that many pieces available anymore. Since the start of the transaction, the number of pieces has decreased` });
+      throw new Error({ message: `There are not that many pieces available anymore. Since the start of the transaction, the number of pieces has decreased` });
     }
     product.quantity = product.quantity - +req.body.quantityPurchased;
     product.quantitySold = product.quantitySold + +req.body.quantityPurchased;
@@ -144,7 +144,7 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
       return res.send();
     }
     await product.save();
-    res.send(product);
+    res.send({ product });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -184,7 +184,7 @@ router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res
     const miniBuffer = await imagemin.buffer(buffer, {
       plugins: [mozjpeg({ quality: 60 })],
     });
-    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id });
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate('seller');
     if (!product) {
       throw new Error({ message: 'Product not found' });
     }
@@ -213,7 +213,7 @@ router.get('/products/:id/photo', async (req, res) => {
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findOne({ _id: req.params.id }).populate('seller');
     if (!product || !product.photo) {
       return res.status(404).send();
     }

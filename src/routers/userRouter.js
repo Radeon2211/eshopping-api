@@ -45,9 +45,9 @@ router.get('/users/me', auth, async (req, res) => {
   }
 });
 
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:username', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ username: req.params.username });
     if (!user) {
       return res.status(404).send({ message: 'User not found' });
     }

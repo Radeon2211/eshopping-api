@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const User = require('../src/models/userModel');
-const { userOneId, userTwoId, userOne, userTwo, userThree, setupDatabase } = require('./fixtures/db');
+const { userOneId, userOne, userTwo, userThree, setupDatabase } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
 
@@ -61,14 +61,14 @@ test('Should not get profile for unauthenticated user', async () => {
 });
 
 test('Should get only username of the user', async () => {
-  const response = await request(app).get(`/users/${userTwoId}`).send().expect(200);
+  const response = await request(app).get(`/users/${userTwo.username}`).send().expect(200);
   const userInfoKeys = Object.keys(response.body.profile);
   expect(userInfoKeys).toHaveLength(1);
   expect(userInfoKeys[0]).toBe('username');
 });
 
 test('Should get username, email and phone of the user', async () => {
-  const response = await request(app).get(`/users/${userOneId}`).send().expect(200);
+  const response = await request(app).get(`/users/${userOne.username}`).send().expect(200);
   expect(Object.keys(response.body.profile)).toHaveLength(3);
   expect(response.body.username).not.toBeNull();
   expect(response.body.email).not.toBeNull();
