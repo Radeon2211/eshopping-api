@@ -15,7 +15,7 @@ router.post('/orders', auth, (req, res) => {
       orders.push(newOrder);
       await newOrder.save();
     });
-    res.status(201).send(orders);
+    res.status(201).send({ orders });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -29,7 +29,7 @@ router.get('/orders/buy', auth, async (req, res) => {
       skip: parseInt(req.query.skip),
       sort,
     });
-    res.send(orders);
+    res.send({ orders });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -43,7 +43,7 @@ router.get('/orders/sell', auth, async (req, res) => {
       skip: parseInt(req.query.skip),
       sort,
     });
-    res.send(orders);
+    res.send({ orders });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -58,7 +58,7 @@ router.get('/orders/:id', auth, async (req, res) => {
     if (!order.seller.equals(req.user._id) && !order.buyer.equals(req.user._id)) {
       return res.status(403).send();
     }
-    res.send(order);
+    res.send({ order });
   } catch (err) {
     res.status(500).send(err);
   }

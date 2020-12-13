@@ -1,7 +1,10 @@
 const request = require('supertest');
 const app = require('../src/app');
+const mongoose = require('mongoose');
 const User = require('../src/models/userModel');
-const { userOneId, userOne, userTwo, userThree, setupDatabase } = require('./fixtures/db');
+const Product = require('../src/models/productModel');
+const { userOneId, userOne, userTwo, productOneId, productTwoId, productThreeId, productFourId, userThree, setupDatabase, cartItemOneId, cartItemTwoId, cartItemThreeId, cartItemFourId } = require('./fixtures/db');
+const { updateCartActions } = require('../src/utils/utilities');
 
 beforeEach(setupDatabase);
 
@@ -45,7 +48,7 @@ test('Should login existing user', async () => {
   expect(user.tokens).toHaveLength(2);
 });
 
-test('Should not login non existing user', async () => {
+test('Should NOT login non existing user', async () => {
   await request(app).post('/users/login').send({
     email: 'nonexistinguser@wp.pl',
     password: 'Pa$$w0rd',
@@ -56,7 +59,7 @@ test('Should get profile for user', async () => {
   await request(app).get(`/users/me`).set('Cookie', [`token=${userOne.tokens[0].token}`]).send().expect(200);
 });
 
-test('Should not get profile for unauthenticated user', async () => {
+test('Should NOT get profile for unauthenticated user', async () => {
   await request(app).get(`/users/me`).send().expect(401);
 });
 
@@ -81,7 +84,7 @@ test('Should delete user profile', async () => {
   expect(user).toBeNull();
 });
 
-test('Should not delete profile for unauthenticated user', async () => {
+test('Should NOT delete profile for unauthenticated user', async () => {
   await request(app).delete(`/users/me`).send().expect(401);
 });
 
@@ -97,7 +100,7 @@ test('Should update valid user fields', async () => {
   expect(user.phone).toEqual('987612345');
 });
 
-test('Should not update invalid user fields', async () => {
+test('Should NOT update invalid user fields', async () => {
   await request(app)
     .patch('/users/me')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -109,7 +112,7 @@ test('Should not update invalid user fields', async () => {
   expect(user.username).toEqual('Konon');
 });
 
-test('Should not signup user with invalid username', async () => {
+test('Should NOT signup user with invalid username', async () => {
   await request(app)
     .post('/users')
     .send({
@@ -127,7 +130,7 @@ test('Should not signup user with invalid username', async () => {
     .expect(400);
 });
 
-test('Should not signup user with invalid email', async () => {
+test('Should NOT signup user with invalid email', async () => {
   await request(app)
     .post('/users')
     .send({
@@ -145,7 +148,7 @@ test('Should not signup user with invalid email', async () => {
     .expect(400);
 });
 
-test('Should not signup user with invalid password', async () => {
+test('Should NOT signup user with invalid password', async () => {
   await request(app)
     .post('/users')
     .send({
@@ -163,7 +166,7 @@ test('Should not signup user with invalid password', async () => {
     .expect(400);
 });
 
-test('Should not update user if unauthenticated', async () => {
+test('Should NOT update user if unauthenticated', async () => {
   await request(app)
     .patch('/users/me')
     .send({
@@ -172,7 +175,7 @@ test('Should not update user if unauthenticated', async () => {
     .expect(401);
 });
 
-test('Should not update user with invalid current credentials', async () => {
+test('Should NOT update user with invalid current credentials', async () => {
   await request(app)
     .patch('/users/me')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -184,7 +187,7 @@ test('Should not update user with invalid current credentials', async () => {
     .expect(400);
 });
 
-test('Should not update user without current credentials', async () => {
+test('Should NOT update user without current credentials', async () => {
   await request(app)
     .patch('/users/me')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -205,7 +208,7 @@ test('Should update user with current credentials', async () => {
     .expect(200);
 });
 
-test('Should not delete user if unauthenticated', async () => {
+test('Should NOT delete user if unauthenticated', async () => {
   await request(app)
     .delete('/users/me')
     .send()
@@ -220,12 +223,12 @@ test('Should admin make other user admin', async () => {
     .expect(200);
 });
 
-test('Should not admin update other user to admin', async () => {
+test('Should NOT non admin update other user to admin', async () => {
   await request(app)
     .patch('/users/add-admin')
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({ email: 'user1@wp.pl' })
-    .expect(400);
+    .expect(403);
 });
 
 test('Should admin remove other admin', async () => {
@@ -236,10 +239,142 @@ test('Should admin remove other admin', async () => {
     .expect(200);
 });
 
-test('Should not admin remove other admin', async () => {
+test('Should NOT non admin remove other admin', async () => {
   await request(app)
     .patch('/users/remove-admin')
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({ email: 'user1@wp.pl' })
+    .expect(403);
+});
+
+test('Should get user cart with populated product', async () => {
+  const response = await request(app)
+    .get('/cart')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send()
+    .expect(200);
+  expect(response.body.cart).toHaveLength(2);
+});
+
+test('Should add new item to cart', async () => {
+  const response = await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .send({ quantity: 2, product: productTwoId })
+    .expect(200);
+  expect(response.body.cart).toHaveLength(2);
+});
+
+test('Should add 1 quantity to item in cart and should equals 3', async () => {
+  const response = await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 1, product: productTwoId })
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(3);
+});
+
+test('Should add 1 quantity to item in cart and should equals 3 even if given quantity equals 3 (total quantity of product in db)', async () => {
+  const response = await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 3, product: productTwoId })
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(3);
+});
+
+test('Should NOT add item to cart if cart items number is 50 or higher', async () => {
+  for (let i = 0; i < 48; i += 1) {
+    const productId = new mongoose.Types.ObjectId();
+    const product = {
+      _id: productId,
+      name: 'Product name',
+      description: '',
+      price: 10,
+      condition: 'new',
+      quantity: 1,
+      seller: userTwo._id,
+    };
+    await new Product(product).save();
+    await request(app)
+      .patch('/cart/add')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .send({ quantity: 1, product: productId })
+  }
+  await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 2, product: productThreeId })
+    .expect(403);
+});
+
+test(`Should NOT add item to cart with user's product`, async () => {
+  await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 1, product: productOneId })
+    .expect(403);
+});
+
+test('Should NOT add new item to cart if given productId does not exists in db', async () => {
+  await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 1, product: new mongoose.Types.ObjectId })
+    .expect(403);
+});
+
+test('Should NOT add new item to cart if given productId is not valid mongoose ObjectID', async () => {
+  await request(app)
+    .patch('/cart/add')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ quantity: 1, product: 'productId' })
+    .expect(500);
+});
+
+test('Should remove item from cart', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemTwoId}/remove`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart).toHaveLength(1);
+});
+
+test('Should increment quantity of cart item', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.INCREMENT}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(3);
+});
+
+test('Should decrement quantity of cart item', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.DECREMENT}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(1);
+});
+
+test('Should NOT increment quantity of cart item if product quantity equals to cart item quantity', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemThreeId}/update?action=${updateCartActions.INCREMENT}`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(1);
+});
+
+test('Should NOT decrement quantity of cart item if product quantity equals to cart item quantity', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemThreeId}/update?action=${updateCartActions.DECREMENT}`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(1);
+});
+
+test('Should NOT update when updating cart item quantity if no action is given', async () => {
+  await request(app)
+    .patch(`/cart/${cartItemTwoId}/update`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .expect(400);
 });

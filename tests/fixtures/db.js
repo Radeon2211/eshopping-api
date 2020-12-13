@@ -4,7 +4,19 @@ const User = require('../../src/models/userModel');
 const Product = require('../../src/models/productModel');
 const Order = require('../../src/models/orderModel');
 
+const cartItemOneId = new mongoose.Types.ObjectId();
+const cartItemTwoId = new mongoose.Types.ObjectId();
+const cartItemThreeId = new mongoose.Types.ObjectId();
+const cartItemFourId = new mongoose.Types.ObjectId();
+const productOneId = new mongoose.Types.ObjectId();
+const productTwoId = new mongoose.Types.ObjectId();
+const productThreeId = new mongoose.Types.ObjectId();
+const productFourId = new mongoose.Types.ObjectId();
 const userOneId = new mongoose.Types.ObjectId();
+const userTwoId = new mongoose.Types.ObjectId();
+const userThreeId = new mongoose.Types.ObjectId();
+const orderOneId = new mongoose.Types.ObjectId();
+
 const userOne = {
   _id: userOneId,
   firstName: 'Krzysztof',
@@ -18,12 +30,23 @@ const userOne = {
   country: 'Poland',
   phone: '123456789',
   contacts: ['email', 'phone'],
+  cart: [
+    {
+      _id: cartItemTwoId,
+      quantity: 2,
+      product: productTwoId,
+    },
+    {
+      _id: cartItemFourId,
+      quantity: 48,
+      product: productFourId,
+    },
+  ],
   tokens: [{
     token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET),
   }],
 };
 
-const userTwoId = new mongoose.Types.ObjectId();
 const userTwo = {
   _id: userTwoId,
   firstName: 'Wojciech',
@@ -37,12 +60,18 @@ const userTwo = {
   country: 'Poland',
   phone: '987654321',
   contacts: [],
+  cart: [
+    {
+      _id: cartItemOneId,
+      quantity: 2,
+      product: productOneId,
+    },
+  ],
   tokens: [{
     token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
   }],
 };
 
-const userThreeId = new mongoose.Types.ObjectId();
 const userThree = {
   _id: userThreeId,
   firstName: 'Jarosław',
@@ -57,12 +86,18 @@ const userThree = {
   phone: '123456789',
   contacts: ['email', 'phone'],
   isAdmin: true,
+  cart: [
+    {
+      _id: cartItemThreeId,
+      quantity: 1,
+      product: productThreeId,
+    },
+  ],
   tokens: [{
     token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
   }],
 };
 
-const productOneId = new mongoose.Types.ObjectId();
 const productOne = {
   _id: productOneId,
   name: 'Mushrooms',
@@ -73,18 +108,16 @@ const productOne = {
   condition: 'not_applicable',
 };
 
-const productTwoId = new mongoose.Types.ObjectId();
 const productTwo = {
   _id: productTwoId,
   name: 'Knife for cutting mushrooms',
   description: 'Thanks to this knife you will be able to collect mushrooms super fastly',
   price: 12,
   condition: 'new',
-  quantity: 1,
+  quantity: 3,
   seller: userTwoId,
 };
 
-const productThreeId = new mongoose.Types.ObjectId();
 const productThree = {
   _id: productThreeId,
   name: 'Wellingtons',
@@ -95,7 +128,16 @@ const productThree = {
   seller: userTwoId,
 };
 
-const orderOneId = new mongoose.Types.ObjectId();
+const productFour = {
+  _id: productFourId,
+  name: 'Bucket',
+  description: 'Big bucket for collecting mushrooms',
+  price: 20,
+  condition: 'used',
+  quantity: 50,
+  seller: userThreeId,
+};
+
 const orderOne = {
   _id: orderOneId,
   seller: userTwoId,
@@ -137,6 +179,7 @@ const setupDatabase = async () => {
   await new Product(productOne).save();
   await new Product(productTwo).save();
   await new Product(productThree).save();
+  await new Product(productFour).save();
   await new Order(orderOne).save();
 };
 
@@ -145,8 +188,14 @@ module.exports = {
   userOne,
   userTwo,
   userThree,
+  cartItemOneId,
+  cartItemTwoId,
+  cartItemThreeId,
+  cartItemFourId,
+  productOneId,
+  productTwoId,
+  productThreeId,
   productOne,
-  productTwo,
   orderOne,
   setupDatabase,
 };

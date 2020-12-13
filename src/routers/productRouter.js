@@ -93,11 +93,11 @@ router.get('/products', getCurrentUser, async (req, res) => {
 
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id }).populate('seller');
+    const product = await Product.findById(req.params.id).populate('seller');
     if (!product) {
       return res.status(404).send({ message: 'Product not found' });
     }
-    res.send(product);
+    res.send({ product });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -160,7 +160,7 @@ router.delete('/products/:id', auth, async (req, res) => {
       return res.status(403).send({ message: `You don't have permission to do this!` });
     }
     product.deleteOne();
-    res.send(product);
+    res.send({ product });
   } catch (err) {
     res.status(500).send(err);
   }

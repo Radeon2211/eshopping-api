@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
 const Order = require('./orderModel');
-const { MyError } = require('../utils/utilities');
+const { MyError, CART_POPULATE } = require('../utils/utilities');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+    maxlength: 12,
     validate(value) {
       if (!validator.isPostalCode(value, 'any')) {
         throw new Error('Enter valid zip code');
@@ -112,7 +113,6 @@ userSchema.methods.toJSON = function() {
   const userObject = user.toObject();
   delete userObject.password;
   delete userObject.tokens;
-  delete userObject.role;
   return userObject;
 };
 
@@ -178,7 +178,7 @@ userSchema.methods.generateAuthToken = async function() {
 };
 
 userSchema.statics.findByCredentials = async (email, password) => {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate(CART_POPULATE);
   if (!user) {
     throw new MyError('You entered incorrect credentials');
   }

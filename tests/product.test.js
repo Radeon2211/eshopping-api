@@ -29,7 +29,7 @@ test('Should fetch three products', async () => {
   expect(response.body.products).toHaveLength(3);
 });
 
-test('Should not second user delete the first task', async () => {
+test('Should NOT second user delete the first task', async () => {
   await request(app)
     .delete(`/prodcuts/${productOne._id}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -39,7 +39,7 @@ test('Should not second user delete the first task', async () => {
   expect(product).not.toBeNull();
 });
 
-test('Should not create product with invalid quantity', async () => {
+test('Should NOT create product with invalid quantity', async () => {
   await request(app)
     .post(`/products`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -63,7 +63,7 @@ test('Should delete authenticated users product', async () => {
   expect(product).toBeNull();
 });
 
-test('Should not delete product if unauthenticated', async () => {
+test('Should NOT delete product if unauthenticated', async () => {
   await request(app)
     .delete(`/products/${productOne._id}`)
     .send()
@@ -72,7 +72,7 @@ test('Should not delete product if unauthenticated', async () => {
   expect(product).not.toBeNull();
 });
 
-test('Should not delete other users product', async () => {
+test('Should NOT delete other users product', async () => {
   await request(app)
     .delete(`/products/${productOne._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -107,7 +107,7 @@ test('Should update other user product', async () => {
   expect(product.quantitySold).toBe(10);
 });
 
-test('Should not update (buy) own product', async () => {
+test('Should NOT update (buy) own product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -132,7 +132,7 @@ test('Should delete product after buy', async () => {
   expect(product).toBeNull();
 });
 
-test('Should send 400 error code due to not enough pieces', async () => {
+test('Should send 400 error code due to NOT enough pieces', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/buyer`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -144,7 +144,7 @@ test('Should send 400 error code due to not enough pieces', async () => {
   expect(product).not.toBeNull();
 });
 
-test('Should not update other user product', async () => {
+test('Should NOT update other user product', async () => {
   await request(app)
     .patch(`/products/${productOne._id}/seller`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -161,7 +161,7 @@ test('Should fetch product by id', async () => {
     .get(`/products/${productOne._id}`)
     .send()
     .expect(200);
-  expect(response.body._id).not.toBeNull();
+  expect(response.body.product._id).not.toBeNull();
 });
 
 test('Should fetch knife', async () => {
@@ -223,13 +223,13 @@ test('Should fetch first two products', async () => {
   expect(response.body.products).toHaveLength(2);
 });
 
-test('Should fetch last product, and 3 as productCount', async () => {
+test('Should fetch oldest (saved as first) product by default, and 4 as productCount', async () => {
   const response = await request(app)
-    .get(`/products?limit=1&p=3`)
+    .get(`/products?limit=1&p=4`)
     .send()
     .expect(200);
-  expect(response.body.products[0].name).toBe('Wellingtons');
-  expect(response.body.productCount).toBe(3);
+  expect(response.body.products[0].name).toEqual('Mushrooms');
+  expect(response.body.productCount).toEqual(4);
 });
 
 test('Should upload photo for first product', async () => {
@@ -242,7 +242,7 @@ test('Should upload photo for first product', async () => {
   expect(product.photo).toEqual(expect.any(Buffer));
 });
 
-test('Should not upload photo for first product by not a seller', async () => {
+test('Should NOT upload photo for first product by not a seller', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -267,7 +267,7 @@ test('Should delete photo of first product', async () => {
   expect(product.photo).toBe(undefined);
 });
 
-test('Should not delete photo of first product by not a seller', async () => {
+test('Should NOT delete photo of first product by not a seller', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
