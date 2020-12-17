@@ -26,6 +26,7 @@ const pages = {
 const updateCartActions = {
   INCREMENT: 'INCREMENT',
   DECREMENT: 'DECREMENT',
+  NUMBER: 'NUMBER',
 };
 
 const MAX_CART_ITEMS_NUMBER = 50;

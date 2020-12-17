@@ -103,6 +103,7 @@ const userSchema = new mongoose.Schema({
     },
   }],
 }, {
+  versionKey: false,
   timestamps: true,
 });
 

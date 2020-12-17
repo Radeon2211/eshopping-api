@@ -184,7 +184,8 @@ router.patch('/cart/add', auth, async (req, res) => {
 router.patch('/cart/:itemId/update', auth, async (req, res) => {
   try {
     const action = req.query.action;
-    if (!Object.values(updateCartActions).includes(action)) {
+    const givenQuantity = +req.query.quantity;
+    if (!Object.values(updateCartActions).includes(action) || (action === updateCartActions.NUMBER && !givenQuantity)) {
       return res.status(400).send({ message: 'Cart update action to perform is not provided or is not valid' });
     }
     const cart = JSON.parse(JSON.stringify(req.user.cart));
@@ -192,25 +193,42 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
     for (let i = 0; i < cart.length; i += 1) {
       const item = cart[i];
       if (item._id === req.params.itemId) {
-        if (action === updateCartActions.INCREMENT) {
-          const productDetails = await Product.findById(item.product);
-          if (item.quantity >= productDetails.quantity) {
+        let productDetails = null;
+        switch (action) {
+          case updateCartActions.INCREMENT:
+            productDetails = await Product.findById(item.product);
+            if (item.quantity >= productDetails.quantity) {
+              updatedCart.push(item);
+            } else {
+              updatedCart.push({
+                ...item,
+                quantity: item.quantity + 1,
+              });
+            }
+            break;
+          case updateCartActions.DECREMENT:
+              if (item.quantity <= 1) {
+                updatedCart.push(item)
+              } else {
+                updatedCart.push({
+                  ...item,
+                  quantity: item.quantity - 1,
+                });
+              }
+              break;
+          case updateCartActions.NUMBER:
+            productDetails = await Product.findById(item.product);
+            if (givenQuantity < 1 || givenQuantity > productDetails.quantity || givenQuantity === item.quantity) {
+              updatedCart.push(item);
+            } else {
+              updatedCart.push({
+                ...item,
+                quantity: givenQuantity,
+              });
+            }
+            break;
+          default:
             updatedCart.push(item);
-          } else {
-            updatedCart.push({
-              ...item,
-              quantity: item.quantity + 1,
-            });
-          }
-        } else if (action === updateCartActions.DECREMENT) {
-          if (item.quantity <= 1) {
-            updatedCart.push(item)
-          } else {
-            updatedCart.push({
-              ...item,
-              quantity: item.quantity - 1,
-            });
-          }
         }
       } else {
         updatedCart.push(item);
