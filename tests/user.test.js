@@ -356,6 +356,45 @@ test('Should decrement quantity of cart item', async () => {
   expect(response.body.cart[0].quantity).toEqual(1);
 });
 
+test('Should update quantity of cart item to 20', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=20`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(20);
+});
+
+test('Should update quantity of cart item to product quantity if given quantity is greater than product quantity', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=2000`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(1000);
+});
+
+test('Should NOT update quantity of cart item if given quantity is false value after parsing to int', async () => {
+  await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=0`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(400);
+});
+
+test('Should NOT update quantity of cart item if given quantity is lower than 1', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=-1`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(2);
+});
+
+test('Should return the same quantity of cart item if given quantity equals to cart item quantity', async () => {
+  const response = await request(app)
+    .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=2`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(response.body.cart[0].quantity).toEqual(2);
+});
+
 test('Should NOT increment quantity of cart item if product quantity equals to cart item quantity', async () => {
   const response = await request(app)
     .patch(`/cart/${cartItemThreeId}/update?action=${updateCartActions.INCREMENT}`)

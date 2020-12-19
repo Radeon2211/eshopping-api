@@ -218,8 +218,13 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
               break;
           case updateCartActions.NUMBER:
             productDetails = await Product.findById(item.product);
-            if (givenQuantity < 1 || givenQuantity > productDetails.quantity || givenQuantity === item.quantity) {
+            if (givenQuantity < 1 || givenQuantity === item.quantity) {
               updatedCart.push(item);
+            } else if (givenQuantity > productDetails.quantity) {
+              updatedCart.push({
+                ...item,
+                quantity: productDetails.quantity,
+              });
             } else {
               updatedCart.push({
                 ...item,
