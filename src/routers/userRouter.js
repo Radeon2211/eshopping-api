@@ -80,7 +80,8 @@ router.patch('/users/me', auth, async (req, res) => {
       req.user[update] = req.body[update];
     });
     await req.user.save();
-    res.send({ user: req.user });
+    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    res.send({ user });
   } catch (err) {
     res.status(400).send(err);
   }

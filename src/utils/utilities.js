@@ -17,6 +17,11 @@ const CART_POPULATE = {
   },
 };
 
+const PRODUCT_SELLER_POPULATE = {
+  path: 'seller',
+  select: 'username',
+};
+
 const pages = {
   ALL_PRODUCTS: 'ALL_PRODUCTS',
   MY_PRODUCTS: 'MY_PRODUCTS',
@@ -39,6 +44,7 @@ MyError.prototype = new Error();
 module.exports = {
   createSortObject,
   CART_POPULATE,
+  PRODUCT_SELLER_POPULATE,
   pages,
   MyError,
   updateCartActions,

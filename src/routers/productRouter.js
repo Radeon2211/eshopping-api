@@ -7,7 +7,8 @@ const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
 const getCurrentUser = require('../middleware/getCurrentUser');
-const { createSortObject, pages } = require('../utils/utilities');
+const { createSortObject, pages, PRODUCT_SELLER_POPULATE } = require('../utils/utilities');
+const User = require('../models/userModel');
 const router = new express.Router();
 
 router.post('/products', auth, async (req, res) => {
@@ -26,7 +27,8 @@ router.post('/products', auth, async (req, res) => {
 router.get('/products', getCurrentUser, async (req, res) => {
   const match = {};
   const page = req.query.page;
-  const seller = req.query.seller;
+  const sellerUsername = req.query.seller;
+
   switch (page) {
     case pages.ALL_PRODUCTS:
       if (req.user) {
@@ -41,7 +43,8 @@ router.get('/products', getCurrentUser, async (req, res) => {
       }
       break;
     case pages.USER_PRODUCTS:
-      match.seller = seller;
+      const sellerDetails = await User.findOne({ username: sellerUsername });
+      match.seller = sellerDetails._id;
       break;
     default:
       break;
@@ -70,9 +73,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
     });
     const productCount = await Product.countDocuments(match);
 
-    const matchToPrices = {
-      ...match,
-    };
+    const matchToPrices = { ...match };
     delete matchToPrices.condition;
     delete matchToPrices.price;
 
@@ -93,7 +94,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
 
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('seller');
+    const product = await Product.findById(req.params.id).populate(PRODUCT_SELLER_POPULATE);
     if (!product) {
       return res.status(404).send({ message: 'Product not found' });
     }
@@ -111,7 +112,7 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
     return res.status(400).send({ message: `You can't change these data!` });
   }
   try {
-    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate('seller');
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate(PRODUCT_SELLER_POPULATE);
     if (!product) {
       return res.status(404).send();
     }
@@ -152,7 +153,7 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
 
 router.delete('/products/:id', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findOne({ _id: req.params.id }).populate(PRODUCT_SELLER_POPULATE);
     if (!product) {
       return res.status(404).send({ message: 'This product does not exist' });
     }
@@ -184,7 +185,7 @@ router.post('/products/:id/photo', auth, upload.single('photo'), async (req, res
     const miniBuffer = await imagemin.buffer(buffer, {
       plugins: [mozjpeg({ quality: 60 })],
     });
-    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate('seller');
+    const product = await Product.findOne({ _id: req.params.id, seller: req.user._id }).populate(PRODUCT_SELLER_POPULATE);
     if (!product) {
       throw new Error({ message: 'Product not found' });
     }
@@ -213,7 +214,7 @@ router.get('/products/:id/photo', async (req, res) => {
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id }).populate('seller');
+    const product = await Product.findOne({ _id: req.params.id }).populate(PRODUCT_SELLER_POPULATE);
     if (!product || !product.photo) {
       return res.status(404).send();
     }
