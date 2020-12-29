@@ -1,7 +1,14 @@
 const request = require('supertest');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
-const { userOneId, userOne, userTwo, userThree, productOne, setupDatabase } = require('./fixtures/db');
+const {
+  userOneId,
+  userOne,
+  userTwo,
+  userThree,
+  productOne,
+  setupDatabase,
+} = require('./fixtures/db');
 
 beforeEach(setupDatabase);
 
@@ -22,10 +29,7 @@ test('Should create product', async () => {
 });
 
 test('Should fetch three products', async () => {
-  const response = await request(app)
-    .get('/products?limit=3')
-    .send()
-    .expect(200);
+  const response = await request(app).get('/products?limit=3').send().expect(200);
   expect(response.body.products).toHaveLength(3);
 });
 
@@ -64,10 +68,7 @@ test('Should delete authenticated users product', async () => {
 });
 
 test('Should NOT delete product if unauthenticated', async () => {
-  await request(app)
-    .delete(`/products/${productOne._id}`)
-    .send()
-    .expect(401);
+  await request(app).delete(`/products/${productOne._id}`).send().expect(401);
   const product = await Product.findById(productOne._id);
   expect(product).not.toBeNull();
 });
@@ -157,50 +158,32 @@ test('Should NOT update other user product', async () => {
 });
 
 test('Should fetch product by id', async () => {
-  const response = await request(app)
-    .get(`/products/${productOne._id}`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products/${productOne._id}`).send().expect(200);
   expect(response.body.product._id).not.toBeNull();
 });
 
 test('Should fetch knife', async () => {
-  const response = await request(app)
-    .get(`/products?name=knife`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?name=knife`).send().expect(200);
   expect(response.body.products[0].name).toBe('Knife for cutting mushrooms');
 });
 
 test('Should fetch only new products', async () => {
-  const response = await request(app)
-    .get(`/products?condition=new`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?condition=new`).send().expect(200);
   expect(response.body.products).toHaveLength(2);
 });
 
 test('Should sort products by name descending', async () => {
-  const response = await request(app)
-    .get(`/products?sortBy=name:desc`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?sortBy=name:desc`).send().expect(200);
   expect(response.body.products[0].name).toBe('Wellingtons');
 });
 
 test('Should sort products by price ascending', async () => {
-  const response = await request(app)
-    .get(`/products?sortBy=price:asc`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?sortBy=price:asc`).send().expect(200);
   expect(response.body.products[1].price).toBeGreaterThan(response.body.products[0].price);
 });
 
 test('Should sort products by price descending', async () => {
-  const response = await request(app)
-    .get(`/products?sortBy=price:desc`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?sortBy=price:desc`).send().expect(200);
   expect(response.body.products[0].price).toBeGreaterThan(response.body.products[1].price);
 });
 
@@ -216,18 +199,12 @@ test('Should sort products by price descending and filter these above $10', asyn
 });
 
 test('Should fetch first two products', async () => {
-  const response = await request(app)
-    .get(`/products?limit=2`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?limit=2`).send().expect(200);
   expect(response.body.products).toHaveLength(2);
 });
 
 test('Should fetch oldest (saved as first) product by default, and 4 as productCount', async () => {
-  const response = await request(app)
-    .get(`/products?limit=1&p=4`)
-    .send()
-    .expect(200);
+  const response = await request(app).get(`/products?limit=1&p=4`).send().expect(200);
   expect(response.body.products[0].name).toEqual('Mushrooms');
   expect(response.body.productCount).toEqual(4);
 });

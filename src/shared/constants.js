@@ -1,14 +1,3 @@
-const createSortObject = (req) => {
-  const sort = {};
-  if (req.query.sortBy) {
-    const parts = req.query.sortBy.split(':');
-    sort[parts[0]] = parts[1] === 'asc' ? 1 : -1;
-  } else {
-    sort.createdAt = -1;
-  }
-  return sort;
-};
-
 const CART_POPULATE = {
   path: 'cart.product',
   populate: {
@@ -42,7 +31,6 @@ function MyError(message) {
 MyError.prototype = new Error();
 
 module.exports = {
-  createSortObject,
   CART_POPULATE,
   PRODUCT_SELLER_POPULATE,
   pages,

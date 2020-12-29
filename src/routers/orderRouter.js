@@ -1,7 +1,8 @@
 const express = require('express');
 const Order = require('../models/orderModel');
 const auth = require('../middleware/auth');
-const { createSortObject } = require('../utils/utilities');
+const { createSortObject } = require('../shared/utility');
+
 const router = new express.Router();
 
 router.post('/orders', auth, (req, res) => {
@@ -25,8 +26,8 @@ router.get('/orders/buy', auth, async (req, res) => {
   try {
     const sort = createSortObject(req);
     const orders = await Order.find({ buyer: req.user._id }, null, {
-      limit: parseInt(req.query.limit),
-      skip: parseInt(req.query.skip),
+      limit: parseInt(req.query.limit, 10),
+      skip: parseInt(req.query.skip, 10),
       sort,
     });
     res.send({ orders });
@@ -39,8 +40,8 @@ router.get('/orders/sell', auth, async (req, res) => {
   try {
     const sort = createSortObject(req);
     const orders = await Order.find({ seller: req.user._id }, null, {
-      limit: parseInt(req.query.limit),
-      skip: parseInt(req.query.skip),
+      limit: parseInt(req.query.limit, 10),
+      skip: parseInt(req.query.skip, 10),
       sort,
     });
     res.send({ orders });

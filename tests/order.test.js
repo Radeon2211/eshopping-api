@@ -9,34 +9,36 @@ test('Should create order', async () => {
   const response = await request(app)
     .post('/orders')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send([{
-      seller: userTwo._id,
-      overallPrice: 70,
-      products: [
-        {
-          _id: new mongoose.Types.ObjectId(),
-          name: 'Item1',
-          price: 2,
-          quantity: 10,
-          totalPrice: 20,
+    .send([
+      {
+        seller: userTwo._id,
+        overallPrice: 70,
+        products: [
+          {
+            _id: new mongoose.Types.ObjectId(),
+            name: 'Item1',
+            price: 2,
+            quantity: 10,
+            totalPrice: 20,
+          },
+          {
+            _id: new mongoose.Types.ObjectId(),
+            name: 'Item2',
+            price: 2.5,
+            quantity: 20,
+            totalPrice: 50,
+          },
+        ],
+        deliveryAddress: {
+          firstName: 'Krzysztof',
+          lastName: 'Kononwicz',
+          street: 'Szkolna 17',
+          zipCode: '15-950',
+          city: 'Białystok',
+          country: 'Poland',
         },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          name: 'Item2',
-          price: 2.50,
-          quantity: 20,
-          totalPrice: 50,
-        },
-      ],
-      deliveryAddress: {
-        firstName: 'Krzysztof',
-        lastName: 'Kononwicz',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
       },
-    }])
+    ])
     .expect(201);
   expect(response.body.orders).not.toBeNull();
 });

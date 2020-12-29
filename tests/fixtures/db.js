@@ -42,9 +42,11 @@ const userOne = {
       product: productFourId,
     },
   ],
-  tokens: [{
-    token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET),
-  }],
+  tokens: [
+    {
+      token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET),
+    },
+  ],
 };
 
 const userTwo = {
@@ -67,9 +69,11 @@ const userTwo = {
       product: productOneId,
     },
   ],
-  tokens: [{
-    token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
-  }],
+  tokens: [
+    {
+      token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
+    },
+  ],
 };
 
 const userThree = {
@@ -93,9 +97,11 @@ const userThree = {
       product: productThreeId,
     },
   ],
-  tokens: [{
-    token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
-  }],
+  tokens: [
+    {
+      token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
+    },
+  ],
 };
 
 const productOne = {
@@ -195,6 +201,7 @@ module.exports = {
   productOneId,
   productTwoId,
   productThreeId,
+  productFourId,
   productOne,
   orderOne,
   setupDatabase,
