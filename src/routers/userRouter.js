@@ -4,18 +4,17 @@ const User = require('../models/userModel');
 const auth = require('../middleware/auth');
 
 const router = new express.Router();
-const { updateCartActions, MAX_CART_ITEMS_NUMBER, CART_POPULATE } = require('../shared/constants');
-const { updateUserCart } = require('../shared/utility');
+const { updateCartActions, MAX_CART_ITEMS_NUMBER } = require('../shared/constants');
+const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
 const Product = require('../models/productModel');
 
 router.post('/users', async (req, res) => {
   const user = new User(req.body);
   try {
     await user.save();
-    const fullUser = await User.findById(user._id).populate(CART_POPULATE);
     const token = await user.generateAuthToken();
     res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
-    res.status(201).send({ user: fullUser });
+    res.status(201).send({ user });
   } catch (err) {
     if (user) {
       await User.findByIdAndDelete(user._id);
@@ -28,7 +27,7 @@ router.post('/users/login', async (req, res) => {
   try {
     const user = await User.findByCredentials(req.body.email, req.body.password);
     const isCartDifferent = await updateUserCart(user, user.cart);
-    const fullUser = await User.findById(user._id).populate(CART_POPULATE);
+    const fullUser = await getFullUser(user._id);
     const token = await user.generateAuthToken();
     res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
     res.send({ user: fullUser, isDifferent: isCartDifferent });
@@ -50,7 +49,7 @@ router.post('/users/logout', auth, async (req, res) => {
 router.get('/users/me', auth, async (req, res) => {
   try {
     const isCartDifferent = await updateUserCart(req.user, req.user.cart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ user, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(500).send();
@@ -96,7 +95,7 @@ router.patch('/users/me', auth, async (req, res) => {
       req.user[update] = req.body[update];
     });
     await updateUserCart(req.user, req.user.cart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ user });
   } catch (err) {
     res.status(400).send(err);
@@ -148,7 +147,7 @@ router.delete('/users/me', auth, async (req, res) => {
 router.get('/cart', auth, async (req, res) => {
   try {
     const isCartDifferent = await updateUserCart(req.user, req.user.cart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ cart: user.cart, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(500).send(err);
@@ -158,7 +157,7 @@ router.get('/cart', auth, async (req, res) => {
 router.patch('/cart/add', auth, async (req, res) => {
   try {
     const newItem = req.body;
-    const productDetails = await Product.findById(newItem.product);
+    const productDetails = await Product.findById(newItem.product).lean();
     if (!productDetails) {
       return res.status(403).send({ message: `This product probably has already been sold` });
     }
@@ -193,7 +192,7 @@ router.patch('/cart/add', auth, async (req, res) => {
       updatedCart = [...req.user.cart, newItem];
     }
     const isCartDifferent = await updateUserCart(req.user, updatedCart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ cart: user.cart, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(500).send(err);
@@ -219,7 +218,7 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
         let productDetails = null;
         switch (action) {
           case updateCartActions.INCREMENT:
-            productDetails = await Product.findById(item.product);
+            productDetails = await Product.findById(item.product).lean();
             if (item.quantity >= productDetails.quantity) {
               updatedCart.push(item);
             } else {
@@ -240,7 +239,7 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
             }
             break;
           case updateCartActions.NUMBER:
-            productDetails = await Product.findById(item.product);
+            productDetails = await Product.findById(item.product).lean();
             if (givenQuantity < 1 || givenQuantity === item.quantity) {
               updatedCart.push(item);
             } else if (givenQuantity > productDetails.quantity) {
@@ -263,7 +262,7 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
       }
     }
     const isCartDifferent = await updateUserCart(req.user, updatedCart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ cart: user.cart, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(500).send(err);
@@ -275,7 +274,7 @@ router.patch('/cart/:itemId/remove', auth, async (req, res) => {
     const { cart } = req.user;
     const updatedCart = cart.filter(({ _id }) => ObjectID(_id).toString() !== req.params.itemId);
     const isCartDifferent = await updateUserCart(req.user, updatedCart);
-    const user = await User.findById(req.user._id).populate(CART_POPULATE);
+    const user = await getFullUser(req.user._id);
     res.send({ cart: user.cart, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(500).send(err);
@@ -287,6 +286,29 @@ router.patch('/cart/clear', auth, async (req, res) => {
     req.user.cart = [];
     await req.user.save();
     res.send();
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+router.patch('/transaction', auth, async (req, res) => {
+  try {
+    const { singleItem } = req.body;
+
+    const items = singleItem ? [singleItem] : req.user.cart;
+    const { transaction, isDifferent } = await verifyItemsToTransaction(
+      items,
+      !singleItem,
+      req.user,
+    );
+
+    let updatedCart = null;
+    if (isDifferent && !singleItem) {
+      const user = await getFullUser(req.user._id);
+      updatedCart = user.cart;
+    }
+
+    res.send({ transaction, isDifferent, cart: updatedCart });
   } catch (err) {
     res.status(500).send(err);
   }

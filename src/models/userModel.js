@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
 const Order = require('./orderModel');
-const { MyError } = require('../shared/utility');
+const { MyError, DELIVERY_ADDRESS } = require('../shared/constants');
 
 const userSchema = new mongoose.Schema(
   {
@@ -37,45 +37,7 @@ const userSchema = new mongoose.Schema(
       maxlength: 64,
       trim: true,
     },
-    firstName: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 60,
-    },
-    lastName: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 80,
-    },
-    street: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 60,
-    },
-    zipCode: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 12,
-      validate(value) {
-        if (!validator.isPostalCode(value, 'any')) {
-          throw new Error('Enter valid zip code');
-        }
-      },
-    },
-    country: {
-      type: String,
-      required: true,
-      maxlength: 60,
-    },
-    city: {
-      type: String,
-      required: true,
-      maxlength: 100,
-    },
+    ...DELIVERY_ADDRESS,
     phone: {
       type: String,
       required: true,

@@ -7,7 +7,7 @@ const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
 const getCurrentUser = require('../middleware/getCurrentUser');
-const { createSortObject } = require('../shared/utility');
+const { createSortObject, getCorrectProduct } = require('../shared/utility');
 const { pages, PRODUCT_SELLER_POPULATE } = require('../shared/constants');
 const User = require('../models/userModel');
 
@@ -51,6 +51,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
     default:
       break;
   }
+
   if (req.query.condition) {
     const conditionArray = req.query.condition.split(',');
     match.condition = new RegExp(conditionArray.toString().replace(/,/g, '|'), 'gi');
@@ -63,6 +64,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
     $lte: req.query.maxPrice || Infinity,
   };
   const sort = createSortObject(req);
+
   try {
     const limit = +req.query.limit || 10;
     const products = await Product.find(match, null, {
@@ -72,7 +74,8 @@ router.get('/products', getCurrentUser, async (req, res) => {
         locale: 'en',
       },
       sort,
-    });
+    }).lean();
+
     const productCount = await Product.countDocuments(match);
 
     const matchToPrices = { ...match };
@@ -90,7 +93,9 @@ router.get('/products', getCurrentUser, async (req, res) => {
       },
     ]);
 
-    res.send({ products, productCount, productPrices });
+    const correctProducts = products.map((product) => getCorrectProduct(product));
+
+    res.send({ products: correctProducts, productCount, productPrices });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -98,11 +103,12 @@ router.get('/products', getCurrentUser, async (req, res) => {
 
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate(PRODUCT_SELLER_POPULATE);
+    const product = await Product.findById(req.params.id).populate(PRODUCT_SELLER_POPULATE).lean();
     if (!product) {
       return res.status(404).send({ message: 'Product not found' });
     }
-    res.send({ product });
+    const correctProduct = getCorrectProduct(product);
+    res.send({ product: correctProduct });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -112,9 +118,11 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+
   if (!isValidOperation) {
     return res.status(400).send({ message: `You can't change these data!` });
   }
+
   try {
     const product = await Product.findOne({
       _id: req.params.id,
@@ -127,7 +135,8 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
       product[update] = req.body[update];
     });
     await product.save();
-    res.send({ product });
+    const correctProduct = getCorrectProduct(product);
+    res.send({ product: correctProduct });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -154,7 +163,8 @@ router.patch('/products/:id/buyer', auth, async (req, res) => {
       return res.send();
     }
     await product.save();
-    res.send({ product });
+    const correctProduct = getCorrectProduct(product);
+    res.send({ product: correctProduct });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -170,7 +180,7 @@ router.delete('/products/:id', auth, async (req, res) => {
       return res.status(403).send({ message: `You don't have permission to do this!` });
     }
     product.deleteOne();
-    res.send({ product });
+    res.send();
   } catch (err) {
     res.status(500).send(err);
   }
@@ -207,7 +217,7 @@ router.post(
       }
       product.photo = miniBuffer;
       await product.save();
-      res.send({ product });
+      res.send();
     } catch (err) {
       res.status(400).send(err);
     }

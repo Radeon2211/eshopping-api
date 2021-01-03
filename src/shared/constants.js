@@ -1,14 +1,13 @@
-const CART_POPULATE = {
-  path: 'cart.product',
-  populate: {
-    path: 'seller',
-    select: 'username',
-  },
-};
+const validator = require('validator');
 
 const PRODUCT_SELLER_POPULATE = {
   path: 'seller',
   select: 'username',
+};
+
+const CART_POPULATE = {
+  path: 'cart.product',
+  populate: PRODUCT_SELLER_POPULATE,
 };
 
 const pages = {
@@ -30,11 +29,54 @@ function MyError(message) {
 }
 MyError.prototype = new Error();
 
+const DELIVERY_ADDRESS = {
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 60,
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 80,
+  },
+  street: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 60,
+  },
+  zipCode: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 12,
+    validate(value) {
+      if (!validator.isPostalCode(value, 'any')) {
+        throw new Error('Enter valid zip code');
+      }
+    },
+  },
+  country: {
+    type: String,
+    required: true,
+    maxlength: 60,
+  },
+  city: {
+    type: String,
+    required: true,
+    maxlength: 100,
+  },
+};
+
 module.exports = {
-  CART_POPULATE,
   PRODUCT_SELLER_POPULATE,
+  CART_POPULATE,
   pages,
   MyError,
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,
+  DELIVERY_ADDRESS,
 };

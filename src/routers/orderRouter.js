@@ -7,16 +7,14 @@ const router = new express.Router();
 
 router.post('/orders', auth, (req, res) => {
   try {
-    const orders = [];
     req.body.forEach(async (order) => {
       const newOrder = new Order({
         ...order,
         buyer: req.user._id,
       });
-      orders.push(newOrder);
       await newOrder.save();
     });
-    res.status(201).send({ orders });
+    res.status(201).send();
   } catch (err) {
     res.status(400).send(err);
   }
@@ -29,7 +27,7 @@ router.get('/orders/buy', auth, async (req, res) => {
       limit: parseInt(req.query.limit, 10),
       skip: parseInt(req.query.skip, 10),
       sort,
-    });
+    }).lean();
     res.send({ orders });
   } catch (err) {
     res.status(500).send(err);
@@ -43,7 +41,7 @@ router.get('/orders/sell', auth, async (req, res) => {
       limit: parseInt(req.query.limit, 10),
       skip: parseInt(req.query.skip, 10),
       sort,
-    });
+    }).lean();
     res.send({ orders });
   } catch (err) {
     res.status(500).send(err);

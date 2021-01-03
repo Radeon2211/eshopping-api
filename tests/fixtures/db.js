@@ -190,7 +190,6 @@ const setupDatabase = async () => {
 };
 
 module.exports = {
-  userOneId,
   userOne,
   userTwo,
   userThree,
@@ -198,11 +197,10 @@ module.exports = {
   cartItemTwoId,
   cartItemThreeId,
   cartItemFourId,
-  productOneId,
-  productTwoId,
-  productThreeId,
-  productFourId,
   productOne,
+  productTwo,
+  productThree,
+  productFour,
   orderOne,
   setupDatabase,
 };
