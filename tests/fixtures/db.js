@@ -155,14 +155,12 @@ const orderOne = {
       name: 'Knife for cutting mushrooms',
       price: 12,
       quantity: 1,
-      totalPrice: 12,
     },
     {
       _id: productThreeId,
       name: 'Wellingtons',
       price: 30,
       quantity: 1,
-      totalPrice: 30,
     },
   ],
   deliveryAddress: {
@@ -186,7 +184,6 @@ const setupDatabase = async () => {
   await new Product(productTwo).save();
   await new Product(productThree).save();
   await new Product(productFour).save();
-  await new Order(orderOne).save();
 };
 
 module.exports = {

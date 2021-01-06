@@ -128,42 +128,21 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
       _id: req.params.id,
       seller: req.user._id,
     }).populate(PRODUCT_SELLER_POPULATE);
+
     if (!product) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'Product which you try to update does not exist' });
     }
+
     updates.forEach((update) => {
       product[update] = req.body[update];
     });
     await product.save();
-    const correctProduct = getCorrectProduct(product);
-    res.send({ product: correctProduct });
-  } catch (err) {
-    res.status(400).send(err);
-  }
-});
 
-router.patch('/products/:id/buyer', auth, async (req, res) => {
-  try {
-    const product = await Product.findOne({ _id: req.params.id });
-    if (!product) {
-      return res.status(404).send();
-    }
-    if (product.seller.equals(req.user._id)) {
-      return res.status(403).send();
-    }
-    if (product.quantity < +req.body.quantityPurchased) {
-      throw new Error({
-        message: `There are not that many pieces available anymore. Since the start of the transaction, the number of pieces has decreased`,
-      });
-    }
-    product.quantity -= +req.body.quantityPurchased;
-    product.quantitySold += +req.body.quantityPurchased;
-    if (product.quantity <= 0) {
-      await product.remove();
-      return res.send();
-    }
-    await product.save();
-    const correctProduct = getCorrectProduct(product);
+    const leanProduct = await Product.findById(product._id)
+      .populate(PRODUCT_SELLER_POPULATE)
+      .lean();
+    const correctProduct = getCorrectProduct(leanProduct);
+
     res.send({ product: correctProduct });
   } catch (err) {
     res.status(400).send(err);

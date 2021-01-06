@@ -35,6 +35,7 @@ const verifyCart = async (cart) => {
   const verifiedCart = [];
   for (const item of parsedCart) {
     const productDetails = await Product.findById(item.product).lean();
+    // console.log('productDetails:', productDetails);
     if (productDetails) {
       if (productDetails.quantity < item.quantity) {
         verifiedCart.push({
@@ -95,10 +96,74 @@ const verifyItemsToTransaction = async (items, updateCart, user) => {
   return { transaction, isDifferent };
 };
 
+const getOrderProduct = ({ _id, name, price, quantity, photo, seller }) => ({
+  _id,
+  name,
+  price,
+  quantity,
+  photo,
+  seller: seller._id,
+});
+
+const verifyItemsToBuy = async (items) => {
+  const transaction = [];
+  const orderProducts = [];
+  let isDifferent = false;
+  for (const item of items) {
+    const productDetails = await Product.findById(item._id)
+      .populate(PRODUCT_SELLER_POPULATE)
+      .lean();
+    if (productDetails) {
+      if (productDetails.quantity < item.quantity) {
+        transaction.push(getTransactionProduct(productDetails));
+        orderProducts.push(getOrderProduct(productDetails));
+        isDifferent = true;
+      } else {
+        transaction.push({
+          ...getTransactionProduct(productDetails),
+          quantity: item.quantity,
+        });
+        orderProducts.push({
+          ...getOrderProduct(productDetails),
+          quantity: item.quantity,
+        });
+      }
+    } else {
+      isDifferent = true;
+    }
+  }
+  return { transaction, orderProducts, isDifferent };
+};
+
+const splitOrderProducts = (products) => {
+  const sellersObject = products.reduce((acc, item) => {
+    if (!acc[item.seller]) {
+      acc[item.seller] = {
+        products: [],
+        seller: item.seller,
+      };
+    }
+    acc[item.seller].products.push({
+      ...item,
+      seller: undefined,
+    });
+    return acc;
+  }, {});
+
+  const sellersArray = Object.entries(sellersObject).map(([seller, rest]) => ({
+    seller,
+    ...rest,
+  }));
+
+  return sellersArray;
+};
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
   getFullUser,
   updateUserCart,
   verifyItemsToTransaction,
+  verifyItemsToBuy,
+  splitOrderProducts,
 };

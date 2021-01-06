@@ -38,7 +38,6 @@ test('Should get user cart with 1 product and isDifferent true when product is d
   const { body } = await request(app)
     .get('/cart')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send()
     .expect(200);
   expect(body.cart).toHaveLength(1);
   expect(body.isDifferent).toEqual(true);
@@ -54,7 +53,6 @@ test('Should get user cart with 2 products and isDifferent true and 40 quantity 
   const { body } = await request(app)
     .get('/cart')
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send()
     .expect(200);
   expect(body.cart).toHaveLength(2);
   expect(body.cart[1].quantity).toEqual(40);

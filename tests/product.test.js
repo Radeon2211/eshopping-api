@@ -50,7 +50,6 @@ test(`Should delete authenticated user's product`, async () => {
   await request(app)
     .delete(`/products/${productOne._id}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send()
     .expect(200);
   const product = await Product.findById(productOne._id);
   expect(product).toBeNull();
@@ -84,65 +83,21 @@ test('Should admin delete other user product', async () => {
 
 // * UPDATING PRODUCTS
 test('Should update product', async () => {
-  await request(app)
+  const { body } = await request(app)
     .patch(`/products/${productOne._id}/seller`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       name: 'Cool mushrooms',
     })
     .expect(200);
-  const product = await Product.findById(productOne._id);
-  expect(product.name).toEqual('Cool mushrooms');
-});
-
-test('Should update other user product', async () => {
-  await request(app)
-    .patch(`/products/${productOne._id}/buyer`)
-    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-    .send({
-      quantityPurchased: 10,
-    })
-    .expect(200);
-  const product = await Product.findById(productOne._id);
-  expect(product.quantity).toEqual(990);
-  expect(product.quantitySold).toEqual(10);
-});
-
-test('Should NOT update (buy) own product', async () => {
-  await request(app)
-    .patch(`/products/${productOne._id}/buyer`)
-    .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send({
-      quantityPurchased: 10,
-    })
-    .expect(403);
-  const product = await Product.findById(productOne._id);
-  expect(product.quantity).toEqual(1000);
-  expect(product.quantitySold).toEqual(0);
-});
-
-test('Should delete product after buy', async () => {
-  await request(app)
-    .patch(`/products/${productOne._id}/buyer`)
-    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-    .send({
-      quantityPurchased: 1000,
-    })
-    .expect(200);
-  const product = await Product.findById(productOne._id);
-  expect(product).toBeNull();
-});
-
-test('Should send 400 error code due to NOT enough pieces', async () => {
-  await request(app)
-    .patch(`/products/${productOne._id}/buyer`)
-    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-    .send({
-      quantityPurchased: 1001,
-    })
-    .expect(400);
-  const product = await Product.findById(productOne._id);
-  expect(product).not.toBeNull();
+  expect(body.product).toMatchObject({
+    name: 'Cool mushrooms',
+    photo: false,
+    seller: {
+      _id: userOne._id.toJSON(),
+      username: userOne.username,
+    },
+  });
 });
 
 test('Should NOT update other user product', async () => {

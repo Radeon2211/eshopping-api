@@ -18,6 +18,8 @@ const {
   getFullUser,
   updateUserCart,
   verifyItemsToTransaction,
+  verifyItemsToBuy,
+  splitOrderProducts,
 } = require('../src/shared/utility');
 
 beforeEach(setupDatabase);
@@ -61,6 +63,7 @@ test('Should get object with message after throwing error with MyError', async (
 });
 
 // * UTILITY
+// * createSortObject()
 test('Should create sort object with createdAt descending when no sort options are set', async () => {
   const req = {
     query: {},
@@ -95,6 +98,7 @@ test('Should create sort object with name ascending', async () => {
   });
 });
 
+// * getCorrectProduct()
 test('Should get product with boolean photo - false', async () => {
   const product = await Product.findById(productOne._id).lean();
   const correctProduct = getCorrectProduct(product);
@@ -112,6 +116,7 @@ test('Should get product with boolean photo - true', async () => {
   expect(correctProduct.photo).toEqual(true);
 });
 
+// * getFullUser()
 test('Should user with populated cart with boolean product photo', async () => {
   const { cart } = await getFullUser(userOne._id);
   expect(cart).toHaveLength(2);
@@ -127,12 +132,14 @@ test('Should user with populated cart with boolean product photo', async () => {
   });
 });
 
+// * updateUserCart()
 test('Should update user cart and return isDifferent false', async () => {
   const user = await User.findById(userOne._id);
   const isDifferent = await updateUserCart(user, user.cart);
   expect(isDifferent).toEqual(false);
 });
 
+// * verifyItemsToTransaction()
 test('Should verify items to transaction (and update none) and get isDifferent false', async () => {
   const user = await User.findById(userOne._id);
   const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, true, user);
@@ -169,6 +176,7 @@ test('Should verify items to transaction (and update first item) and get isDiffe
     .send({
       quantity: 1,
     });
+
   const user = await User.findById(userOne._id);
   const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, true, user);
   expect(transaction).toHaveLength(2);
@@ -195,4 +203,148 @@ test('Should verify items to transaction (and update first item) and get isDiffe
     },
   });
   expect(isDifferent).toEqual(true);
+});
+
+// * verifyItemsToBuy()
+test('Should verify items to buy and get isDifferent false', async () => {
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { transaction, orderProducts, isDifferent } = await verifyItemsToBuy([item]);
+  expect(transaction).toHaveLength(1);
+  expect(orderProducts).toHaveLength(1);
+  expect(transaction[0]).toEqual(item);
+  expect(orderProducts[0]).toEqual({
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: productTwo.photo,
+    seller: userTwo._id,
+  });
+  expect(isDifferent).toEqual(false);
+});
+
+test('Should verify items to buy and get transaction with updated item and isDifferent true if given quantity is too high', async () => {
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 10,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  expect(transaction).toHaveLength(1);
+  expect(transaction[0]).toEqual({
+    ...item,
+    quantity: 3,
+  });
+  expect(isDifferent).toEqual(true);
+});
+
+test('Should verify items to buy and get transaction with updated item and isDifferent true if quantity changed before', async () => {
+  await request(app)
+    .patch(`/products/${productTwo._id}/seller`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({
+      quantity: 1,
+    });
+
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 3,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  expect(transaction).toHaveLength(1);
+  expect(transaction[0]).toEqual({
+    ...item,
+    quantity: 1,
+  });
+  expect(isDifferent).toEqual(true);
+});
+
+test('Should verify items to buy and get empty transaction and isDifferent true', async () => {
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
+
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  expect(transaction).toHaveLength(0);
+  expect(isDifferent).toEqual(true);
+});
+
+// * splitOrderProduct()
+test('Should verify items to buy and get empty transaction and isDifferent true', async () => {
+  const item1 = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: productTwo.photo,
+    seller: userTwo._id,
+  };
+  const item2 = {
+    _id: productFour._id,
+    name: productFour.name,
+    price: productFour.price,
+    quantity: 1,
+    photo: productFour.photo,
+    seller: userThree._id,
+  };
+  const splittedProducts = await splitOrderProducts([item1, item2]);
+  expect(splittedProducts).toHaveLength(2);
+  expect(splittedProducts[0]).toEqual({
+    seller: userTwo._id,
+    products: [
+      {
+        _id: productTwo._id,
+        name: productTwo.name,
+        price: productTwo.price,
+        quantity: 1,
+        photo: productTwo.photo,
+      },
+    ],
+  });
+  expect(splittedProducts[1]).toEqual({
+    seller: userThree._id,
+    products: [
+      {
+        _id: productFour._id,
+        name: productFour.name,
+        price: productFour.price,
+        quantity: 1,
+        photo: productFour.photo,
+      },
+    ],
+  });
 });
