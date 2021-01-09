@@ -1,6 +1,6 @@
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
-const { PRODUCT_SELLER_POPULATE, CART_POPULATE } = require('./constants');
+const { SELLER_USERNAME_POPULATE, CART_POPULATE } = require('./constants');
 
 const createSortObject = (req) => {
   const sort = {};
@@ -17,6 +17,17 @@ const getCorrectProduct = (product) => ({
   ...product,
   photo: Boolean(product.photo),
 });
+
+const getCorrectOrders = (orders) => {
+  const correctOrders = orders.map((order) => {
+    const correctProducts = order.products.map((product) => getCorrectProduct(product));
+    return {
+      ...order,
+      products: correctProducts,
+    };
+  });
+  return correctOrders;
+};
 
 const getFullUser = async (userId) => {
   const user = await User.findById(userId).populate(CART_POPULATE).lean();
@@ -77,7 +88,7 @@ const verifyItemsToTransaction = async (items, updateCart, user) => {
   let isDifferent = false;
   for (const item of parsedItems) {
     const productDetails = await Product.findById(item.product)
-      .populate(PRODUCT_SELLER_POPULATE)
+      .populate(SELLER_USERNAME_POPULATE)
       .lean();
     if (productDetails) {
       if (productDetails.quantity < item.quantity) {
@@ -105,15 +116,21 @@ const getOrderProduct = ({ _id, name, price, quantity, photo, seller }) => ({
   seller: seller._id,
 });
 
-const verifyItemsToBuy = async (items) => {
+const verifyItemsToBuy = async (items, currentUserId) => {
   const transaction = [];
   const orderProducts = [];
   let isDifferent = false;
+  let isBuyingOwnProducts = false;
+
   for (const item of items) {
     const productDetails = await Product.findById(item._id)
-      .populate(PRODUCT_SELLER_POPULATE)
+      .populate(SELLER_USERNAME_POPULATE)
       .lean();
     if (productDetails) {
+      if (productDetails.seller._id.equals(currentUserId)) {
+        isBuyingOwnProducts = true;
+      }
+
       if (productDetails.quantity < item.quantity) {
         transaction.push(getTransactionProduct(productDetails));
         orderProducts.push(getOrderProduct(productDetails));
@@ -132,7 +149,8 @@ const verifyItemsToBuy = async (items) => {
       isDifferent = true;
     }
   }
-  return { transaction, orderProducts, isDifferent };
+
+  return { transaction, orderProducts, isDifferent, isBuyingOwnProducts };
 };
 
 const splitOrderProducts = (products) => {
@@ -161,6 +179,7 @@ const splitOrderProducts = (products) => {
 module.exports = {
   createSortObject,
   getCorrectProduct,
+  getCorrectOrders,
   getFullUser,
   updateUserCart,
   verifyItemsToTransaction,

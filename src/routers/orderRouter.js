@@ -3,7 +3,13 @@ const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
 const {
+  orderTypes,
+  SELLER_USERNAME_POPULATE,
+  BUYER_USERNAME_POPULATE,
+} = require('../shared/constants');
+const {
   createSortObject,
+  getCorrectOrders,
   verifyItemsToBuy,
   splitOrderProducts,
   updateUserCart,
@@ -14,9 +20,15 @@ const router = new express.Router();
 
 router.post('/orders', auth, async (req, res) => {
   try {
-    const { transaction, orderProducts, isDifferent } = await verifyItemsToBuy(
+    const { transaction, orderProducts, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
       req.body.transaction,
+      req.user._id,
     );
+
+    if (isBuyingOwnProducts) {
+      return res.status(403).send({ message: `You can't buy your own products` });
+    }
+
     if (isDifferent) {
       await updateUserCart(req.user, req.user.cart);
       return res.status(200).send({ transaction });
@@ -77,29 +89,30 @@ router.post('/orders', auth, async (req, res) => {
   }
 });
 
-router.get('/orders/buy', auth, async (req, res) => {
+router.get('/orders', auth, async (req, res) => {
   try {
     const sort = createSortObject(req);
-    const orders = await Order.find({ buyer: req.user._id }, null, {
-      limit: parseInt(req.query.limit, 10),
-      skip: parseInt(req.query.skip, 10),
-      sort,
-    }).lean();
-    res.send({ orders });
-  } catch (err) {
-    res.status(500).send(err);
-  }
-});
 
-router.get('/orders/sell', auth, async (req, res) => {
-  try {
-    const sort = createSortObject(req);
-    const orders = await Order.find({ seller: req.user._id }, null, {
-      limit: parseInt(req.query.limit, 10),
-      skip: parseInt(req.query.skip, 10),
+    let match = null;
+    if (req.query.type === orderTypes.PLACED_ORDERS) {
+      match = { buyer: req.user._id };
+    } else {
+      match = { seller: req.user._id };
+    }
+
+    const orders = await Order.find(match, null, {
+      limit: 6,
+      skip: ((+req.query.p || 1) - 1) * 6,
       sort,
-    }).lean();
-    res.send({ orders });
+    })
+      .populate(SELLER_USERNAME_POPULATE)
+      .populate(BUYER_USERNAME_POPULATE)
+      .lean();
+
+    const orderCount = await Order.countDocuments(match);
+    const correctOrders = getCorrectOrders(orders);
+
+    res.send({ orders: correctOrders, orderCount });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -107,7 +120,7 @@ router.get('/orders/sell', auth, async (req, res) => {
 
 router.get('/orders/:id', auth, async (req, res) => {
   try {
-    const order = await Order.findOne({ _id: req.params.id }).populate('seller').populate('buyer');
+    const order = await Order.findById(req.params.id).populate('seller').populate('buyer');
     if (!order) {
       return res.status(404).send();
     }
@@ -115,6 +128,23 @@ router.get('/orders/:id', auth, async (req, res) => {
       return res.status(403).send();
     }
     res.send({ order });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+router.get('/orders/:id/:productId/photo', auth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).send();
+    }
+    const product = order.products.find(({ _id }) => _id.equals(req.params.productId));
+    if (!product) {
+      return res.status(404).send();
+    }
+    res.set('Content-Type', 'image/jpeg');
+    res.send(product.photo);
   } catch (err) {
     res.status(500).send(err);
   }

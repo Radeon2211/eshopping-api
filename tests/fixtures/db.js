@@ -16,6 +16,8 @@ const userOneId = new mongoose.Types.ObjectId();
 const userTwoId = new mongoose.Types.ObjectId();
 const userThreeId = new mongoose.Types.ObjectId();
 const orderOneId = new mongoose.Types.ObjectId();
+const orderTwoId = new mongoose.Types.ObjectId();
+const orderThreeId = new mongoose.Types.ObjectId();
 
 const userOne = {
   _id: userOneId,
@@ -148,29 +150,52 @@ const orderOne = {
   _id: orderOneId,
   seller: userTwoId,
   buyer: userOneId,
-  overallPrice: 42,
+  overallPrice: productTwo.price * 1 + productThree.price * 1,
   products: [
     {
       _id: productTwoId,
-      name: 'Knife for cutting mushrooms',
-      price: 12,
+      name: productTwo.name,
+      price: productTwo.price,
       quantity: 1,
     },
     {
       _id: productThreeId,
-      name: 'Wellingtons',
-      price: 30,
+      name: productThree.name,
+      price: productThree.price,
       quantity: 1,
     },
   ],
   deliveryAddress: {
-    firstName: 'Krzysztof',
-    lastName: 'Kononwicz',
-    street: 'Szkolna 17',
-    zipCode: '15-950',
-    city: 'Białystok',
-    country: 'Poland',
+    firstName: userOne.firstName,
+    lastName: userOne.lastName,
+    street: userOne.street,
+    zipCode: userOne.zipCode,
+    city: userOne.city,
+    country: userOne.country,
+    phone: userOne.phone,
   },
+};
+
+const orderTwo = {
+  ...orderOne,
+  _id: orderTwoId,
+  products: [orderOne.products[0]],
+  overallPrice: productTwo.price * 1,
+};
+
+const orderThree = {
+  ...orderOne,
+  _id: orderThreeId,
+  seller: userThreeId,
+  products: [
+    {
+      _id: productFourId,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 1,
+    },
+  ],
+  overallPrice: productFour.price * 1,
 };
 
 const setupDatabase = async () => {
@@ -199,5 +224,7 @@ module.exports = {
   productThree,
   productFour,
   orderOne,
+  orderTwo,
+  orderThree,
   setupDatabase,
 };

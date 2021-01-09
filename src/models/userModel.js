@@ -38,10 +38,6 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     ...DELIVERY_ADDRESS,
-    phone: {
-      type: String,
-      required: true,
-    },
     contacts: [
       {
         type: String,

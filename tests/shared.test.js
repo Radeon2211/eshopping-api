@@ -11,7 +11,7 @@ const {
   setupDatabase,
   productOne,
 } = require('./fixtures/db');
-const { CART_POPULATE, PRODUCT_SELLER_POPULATE, MyError } = require('../src/shared/constants');
+const { CART_POPULATE, SELLER_USERNAME_POPULATE, MyError } = require('../src/shared/constants');
 const {
   createSortObject,
   getCorrectProduct,
@@ -26,7 +26,7 @@ beforeEach(setupDatabase);
 
 // * CONSTANTS
 test('Should get product with seller username', async () => {
-  const product = await Product.findById(productOne._id).populate(PRODUCT_SELLER_POPULATE).lean();
+  const product = await Product.findById(productOne._id).populate(SELLER_USERNAME_POPULATE).lean();
   expect(product).toMatchObject({
     ...productOne,
     quantitySold: 0,
@@ -206,7 +206,7 @@ test('Should verify items to transaction (and update first item) and get isDiffe
 });
 
 // * verifyItemsToBuy()
-test('Should verify items to buy and get isDifferent false', async () => {
+test('Should get correct orderProducts and isDifferent false and isBuyingOwnProducts false', async () => {
   const item = {
     _id: productTwo._id,
     name: productTwo.name,
@@ -218,7 +218,10 @@ test('Should verify items to buy and get isDifferent false', async () => {
       username: userTwo.username,
     },
   };
-  const { transaction, orderProducts, isDifferent } = await verifyItemsToBuy([item]);
+  const { transaction, orderProducts, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
+    [item],
+    userOne._id,
+  );
   expect(transaction).toHaveLength(1);
   expect(orderProducts).toHaveLength(1);
   expect(transaction[0]).toEqual(item);
@@ -231,9 +234,10 @@ test('Should verify items to buy and get isDifferent false', async () => {
     seller: userTwo._id,
   });
   expect(isDifferent).toEqual(false);
+  expect(isBuyingOwnProducts).toEqual(false);
 });
 
-test('Should verify items to buy and get transaction with updated item and isDifferent true if given quantity is too high', async () => {
+test('Should get transaction with updated item and isDifferent true if given quantity is too high', async () => {
   const item = {
     _id: productTwo._id,
     name: productTwo.name,
@@ -245,7 +249,7 @@ test('Should verify items to buy and get transaction with updated item and isDif
       username: userTwo.username,
     },
   };
-  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
   expect(transaction).toHaveLength(1);
   expect(transaction[0]).toEqual({
     ...item,
@@ -254,7 +258,7 @@ test('Should verify items to buy and get transaction with updated item and isDif
   expect(isDifferent).toEqual(true);
 });
 
-test('Should verify items to buy and get transaction with updated item and isDifferent true if quantity changed before', async () => {
+test('Should get transaction with updated item and isDifferent true if quantity changed before', async () => {
   await request(app)
     .patch(`/products/${productTwo._id}/seller`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -273,7 +277,7 @@ test('Should verify items to buy and get transaction with updated item and isDif
       username: userTwo.username,
     },
   };
-  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
   expect(transaction).toHaveLength(1);
   expect(transaction[0]).toEqual({
     ...item,
@@ -282,7 +286,7 @@ test('Should verify items to buy and get transaction with updated item and isDif
   expect(isDifferent).toEqual(true);
 });
 
-test('Should verify items to buy and get empty transaction and isDifferent true', async () => {
+test('Should get empty transaction and isDifferent true', async () => {
   await request(app)
     .delete(`/products/${productTwo._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
@@ -298,9 +302,46 @@ test('Should verify items to buy and get empty transaction and isDifferent true'
       username: userTwo.username,
     },
   };
-  const { transaction, isDifferent } = await verifyItemsToBuy([item]);
+  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
   expect(transaction).toHaveLength(0);
   expect(isDifferent).toEqual(true);
+});
+
+test('Should get empty transaction and isDifferent true', async () => {
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
+
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
+  expect(transaction).toHaveLength(0);
+  expect(isDifferent).toEqual(true);
+});
+
+test('Should get isBuyingOwnProducts true if product seller is the same as buyer', async () => {
+  const item = {
+    _id: productTwo._id,
+    name: productTwo.name,
+    price: productTwo.price,
+    quantity: 1,
+    photo: false,
+    seller: {
+      _id: userTwo._id,
+      username: userTwo.username,
+    },
+  };
+  const { isBuyingOwnProducts } = await verifyItemsToBuy([item], userTwo._id);
+  expect(isBuyingOwnProducts).toEqual(true);
 });
 
 // * splitOrderProduct()

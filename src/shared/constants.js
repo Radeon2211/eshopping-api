@@ -1,19 +1,29 @@
 const validator = require('validator');
 
-const PRODUCT_SELLER_POPULATE = {
+const SELLER_USERNAME_POPULATE = {
   path: 'seller',
+  select: 'username',
+};
+
+const BUYER_USERNAME_POPULATE = {
+  path: 'buyer',
   select: 'username',
 };
 
 const CART_POPULATE = {
   path: 'cart.product',
-  populate: PRODUCT_SELLER_POPULATE,
+  populate: SELLER_USERNAME_POPULATE,
 };
 
 const pages = {
   ALL_PRODUCTS: 'ALL_PRODUCTS',
   MY_PRODUCTS: 'MY_PRODUCTS',
   USER_PRODUCTS: 'USER_PRODUCTS',
+};
+
+const orderTypes = {
+  PLACED_ORDERS: 'PLACED_ORDERS',
+  SELL_HISTORY: 'SELL_HISTORY',
 };
 
 const updateCartActions = {
@@ -69,12 +79,18 @@ const DELIVERY_ADDRESS = {
     required: true,
     maxlength: 100,
   },
+  phone: {
+    type: String,
+    required: true,
+  },
 };
 
 module.exports = {
-  PRODUCT_SELLER_POPULATE,
+  SELLER_USERNAME_POPULATE,
+  BUYER_USERNAME_POPULATE,
   CART_POPULATE,
   pages,
+  orderTypes,
   MyError,
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,

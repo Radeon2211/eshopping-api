@@ -8,7 +8,7 @@ const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
 const getCurrentUser = require('../middleware/getCurrentUser');
 const { createSortObject, getCorrectProduct } = require('../shared/utility');
-const { pages, PRODUCT_SELLER_POPULATE } = require('../shared/constants');
+const { pages, SELLER_USERNAME_POPULATE } = require('../shared/constants');
 const User = require('../models/userModel');
 
 const router = new express.Router();
@@ -28,8 +28,7 @@ router.post('/products', auth, async (req, res) => {
 
 router.get('/products', getCurrentUser, async (req, res) => {
   const match = {};
-  const { page } = req.query;
-  const sellerUsername = req.query.seller;
+  const { page, seller: sellerUsername } = req.query;
 
   switch (page) {
     case pages.ALL_PRODUCTS:
@@ -69,7 +68,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
     const limit = +req.query.limit || 10;
     const products = await Product.find(match, null, {
       limit,
-      skip: (+req.query.p - 1) * limit,
+      skip: ((+req.query.p || 1) - 1) * limit,
       collation: {
         locale: 'en',
       },
@@ -103,7 +102,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
 
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate(PRODUCT_SELLER_POPULATE).lean();
+    const product = await Product.findById(req.params.id).populate(SELLER_USERNAME_POPULATE).lean();
     if (!product) {
       return res.status(404).send({ message: 'Product not found' });
     }
@@ -127,7 +126,7 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
     const product = await Product.findOne({
       _id: req.params.id,
       seller: req.user._id,
-    }).populate(PRODUCT_SELLER_POPULATE);
+    }).populate(SELLER_USERNAME_POPULATE);
 
     if (!product) {
       return res.status(404).send({ message: 'Product which you try to update does not exist' });
@@ -139,7 +138,7 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
     await product.save();
 
     const leanProduct = await Product.findById(product._id)
-      .populate(PRODUCT_SELLER_POPULATE)
+      .populate(SELLER_USERNAME_POPULATE)
       .lean();
     const correctProduct = getCorrectProduct(leanProduct);
 
@@ -190,7 +189,7 @@ router.post(
       const product = await Product.findOne({
         _id: req.params.id,
         seller: req.user._id,
-      }).populate(PRODUCT_SELLER_POPULATE);
+      }).populate(SELLER_USERNAME_POPULATE);
       if (!product) {
         throw new Error({ message: 'Product not found' });
       }
@@ -209,19 +208,21 @@ router.post(
 router.get('/products/:id/photo', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product || !product.photo) {
-      throw new Error();
+    if (!product) {
+      return res.status(404).send();
     }
     res.set('Content-Type', 'image/jpeg');
     res.send(product.photo);
   } catch (err) {
-    res.status(404).send();
+    res.status(500).send();
   }
 });
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id }).populate(PRODUCT_SELLER_POPULATE);
+    const product = await Product.findOne({ _id: req.params.id }).populate(
+      SELLER_USERNAME_POPULATE,
+    );
     if (!product || !product.photo) {
       return res.status(404).send();
     }
