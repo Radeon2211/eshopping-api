@@ -95,28 +95,29 @@ test('Should get profile for user with isDifferent true and cart length 1', asyn
   await request(app)
     .delete(`/products/${productFour._id}`)
     .set('Cookie', [`token=${userThree.tokens[0].token}`]);
+
   const { body } = await request(app)
     .get(`/users/me`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send()
     .expect(200);
+
   expect(body.user.cart).toHaveLength(1);
   expect(body.isDifferent).toEqual(true);
 });
 
 test('Should NOT get profile for unauthenticated user', async () => {
-  await request(app).get(`/users/me`).send().expect(401);
+  await request(app).get(`/users/me`).expect(401);
 });
 
 test('Should get only username of the user', async () => {
-  const { body } = await request(app).get(`/users/${userTwo.username}`).send().expect(200);
+  const { body } = await request(app).get(`/users/${userTwo.username}`).expect(200);
   const userInfoKeys = Object.keys(body.profile);
   expect(userInfoKeys).toHaveLength(1);
   expect(userInfoKeys[0]).toEqual('username');
 });
 
 test('Should get username, email and phone of the user', async () => {
-  const { body } = await request(app).get(`/users/${userOne.username}`).send().expect(200);
+  const { body } = await request(app).get(`/users/${userOne.username}`).expect(200);
   expect(Object.keys(body.profile)).toHaveLength(3);
   expect(body.username).not.toBeNull();
   expect(body.email).not.toBeNull();
@@ -134,7 +135,7 @@ test('Should delete user profile', async () => {
 });
 
 test('Should NOT delete profile for unauthenticated user', async () => {
-  await request(app).delete(`/users/me`).send().expect(401);
+  await request(app).delete(`/users/me`).expect(401);
 });
 
 test('Should update valid user fields and get cart length 2', async () => {

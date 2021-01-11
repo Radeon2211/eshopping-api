@@ -13,10 +13,19 @@ const createSortObject = (req) => {
   return sort;
 };
 
-const getCorrectProduct = (product) => ({
-  ...product,
-  photo: Boolean(product.photo),
-});
+const getCorrectProduct = (product, getSeller = false) => {
+  let seller = {};
+  if (getSeller) {
+    seller = {
+      username: product.seller.username,
+    };
+  }
+  return {
+    ...product,
+    photo: Boolean(product.photo),
+    ...seller,
+  };
+};
 
 const getCorrectOrders = (orders) => {
   const correctOrders = orders.map((order) => {
@@ -31,11 +40,17 @@ const getCorrectOrders = (orders) => {
 
 const getFullUser = async (userId) => {
   const user = await User.findById(userId).populate(CART_POPULATE).lean();
+
   const updatedCart = user.cart.map((item) => ({
     ...item,
-    product: getCorrectProduct(item.product),
+    product: getCorrectProduct(item.product, true),
   }));
+
   user.cart = updatedCart;
+
+  delete user.password;
+  delete user.tokens;
+
   return user;
 };
 
@@ -44,9 +59,9 @@ const checkCartDifference = (cart1, cart2) => JSON.stringify(cart1) !== JSON.str
 const verifyCart = async (cart) => {
   const parsedCart = JSON.parse(JSON.stringify(cart));
   const verifiedCart = [];
+
   for (const item of parsedCart) {
     const productDetails = await Product.findById(item.product).lean();
-    // console.log('productDetails:', productDetails);
     if (productDetails) {
       if (productDetails.quantity < item.quantity) {
         verifiedCart.push({
@@ -58,6 +73,7 @@ const verifyCart = async (cart) => {
       }
     }
   }
+
   return verifiedCart;
 };
 
@@ -76,16 +92,20 @@ const getTransactionProduct = ({ _id, name, price, quantity, photo, seller }) =>
   price,
   quantity,
   photo: Boolean(photo),
-  seller,
+  seller: {
+    username: seller.username,
+  },
 });
 
 const verifyItemsToTransaction = async (items, updateCart, user) => {
   if (updateCart) {
     await updateUserCart(user, items);
   }
+
   const parsedItems = JSON.parse(JSON.stringify(items));
   const transaction = [];
   let isDifferent = false;
+
   for (const item of parsedItems) {
     const productDetails = await Product.findById(item.product)
       .populate(SELLER_USERNAME_POPULATE)
@@ -104,6 +124,7 @@ const verifyItemsToTransaction = async (items, updateCart, user) => {
       isDifferent = true;
     }
   }
+
   return { transaction, isDifferent };
 };
 
@@ -123,9 +144,7 @@ const verifyItemsToBuy = async (items, currentUserId) => {
   let isBuyingOwnProducts = false;
 
   for (const item of items) {
-    const productDetails = await Product.findById(item._id)
-      .populate(SELLER_USERNAME_POPULATE)
-      .lean();
+    const productDetails = await Product.findById(item._id).populate('seller').lean();
     if (productDetails) {
       if (productDetails.seller._id.equals(currentUserId)) {
         isBuyingOwnProducts = true;

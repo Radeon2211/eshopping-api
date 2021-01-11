@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
-const Order = require('./orderModel');
 const { MyError, DELIVERY_ADDRESS } = require('../shared/constants');
 
 const userSchema = new mongoose.Schema(
@@ -169,8 +168,6 @@ userSchema.pre('save', async function (next) {
 userSchema.pre('remove', async function (next) {
   const user = this;
   await Product.deleteMany({ seller: user._id });
-  await Order.updateMany({ seller: user._id });
-  await Order.updateMany({ buyer: user._id });
   next();
 });
 

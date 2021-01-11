@@ -16,6 +16,7 @@ const {
   productFour,
 } = require('./fixtures/db');
 const { orderTypes } = require('../src/shared/constants');
+const { getCorrectProduct } = require('../src/shared/utility');
 
 beforeEach(setupDatabase);
 
@@ -29,6 +30,7 @@ const userOneDeliveryAddress = {
   phone: userOne.phone,
 };
 
+// * POST /orders *//
 test('Should create order with productTwo and update its quantity and get transaction undefined and updated cart', async () => {
   const { body } = await request(app)
     .post('/orders')
@@ -41,7 +43,9 @@ test('Should create order with productTwo and update its quantity and get transa
           price: productTwo.price,
           quantity: 2,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -86,7 +90,9 @@ test('Should create two orders with productTwo and productFour and clear cart', 
           price: productTwo.price,
           quantity: 2,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
         {
           _id: productFour._id,
@@ -94,7 +100,9 @@ test('Should create two orders with productTwo and productFour and clear cart', 
           price: productFour.price,
           quantity: 2,
           photo: false,
-          seller: productFour.seller,
+          seller: {
+            username: userThree.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -147,7 +155,9 @@ test('Should create three orders with productTwo and productFour and update its 
           price: productTwo.price,
           quantity: 1,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
         {
           _id: productFour._id,
@@ -155,7 +165,9 @@ test('Should create three orders with productTwo and productFour and update its 
           price: productFour.price,
           quantity: 10,
           photo: false,
-          seller: productFour.seller,
+          seller: {
+            username: userThree.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -174,7 +186,9 @@ test('Should create three orders with productTwo and productFour and update its 
           price: productTwo.price,
           quantity: 1,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -207,7 +221,9 @@ test('Should create order with productTwo and delete it and get transaction unde
           price: productTwo.price,
           quantity: 3,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -258,7 +274,9 @@ test('Should NOT create order and get transaction with updated item', async () =
           price: productTwo.price,
           quantity: 3,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -280,7 +298,6 @@ test('Should NOT create order and get transaction with updated item', async () =
       quantity: 1,
       photo: false,
       seller: {
-        _id: userTwo._id.toJSON(),
         username: userTwo.username,
       },
     },
@@ -304,7 +321,9 @@ test('Should NOT create order and get empty transaction', async () => {
           price: productTwo.price,
           quantity: 3,
           photo: false,
-          seller: productTwo.seller,
+          seller: {
+            username: userTwo.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -329,7 +348,9 @@ test('Should NOT create order and get 403 if product seller is the same as buyer
           price: productOne.price,
           quantity: 1,
           photo: false,
-          seller: productOne.seller,
+          seller: {
+            username: userOne.username,
+          },
         },
       ],
       deliveryAddress: userOneDeliveryAddress,
@@ -342,6 +363,7 @@ test('Should NOT create order and get 403 if product seller is the same as buyer
   expect(body.message).toEqual(`You can't buy your own products`);
 });
 
+// * GET /orders * //
 test('Should fetch one placed order with correct data and orderCount 1', async () => {
   await new Order(orderOne).save();
 
@@ -354,11 +376,9 @@ test('Should fetch one placed order with correct data and orderCount 1', async (
   expect(body.orders[0]).toMatchObject({
     _id: orderOne._id.toJSON(),
     seller: {
-      _id: userTwo._id.toJSON(),
       username: userTwo.username,
     },
     buyer: {
-      _id: userOne._id.toJSON(),
       username: userOne.username,
     },
     deliveryAddress: orderOne.deliveryAddress,
@@ -430,7 +450,67 @@ test('Should fetch two placed orders at second page and orderCount 8', async () 
   expect(body.orderCount).toEqual(8);
 });
 
-test('Should NOT fetch orders from sell history', async () => {
+test('Should fetch two orders from sell history sorted ascending by price (saving higher to lower price)', async () => {
+  await new Order(orderOne).save();
+  await new Order(orderTwo).save();
+
+  const {
+    body: { orders, orderCount },
+  } = await request(app)
+    .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=overallPrice:asc`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(orders).toHaveLength(2);
+  expect(orders[1].overallPrice).toBeGreaterThan(orders[0].overallPrice);
+  expect(orderCount).toEqual(2);
+});
+
+test('Should fetch two orders from sell history sorted descending by price (saving lower to higher price)', async () => {
+  await new Order(orderTwo).save();
+  await new Order(orderOne).save();
+
+  const {
+    body: { orders, orderCount },
+  } = await request(app)
+    .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=overallPrice:desc`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(orders).toHaveLength(2);
+  expect(orders[0].overallPrice).toBeGreaterThan(orders[1].overallPrice);
+  expect(orderCount).toEqual(2);
+});
+
+test('Should fetch two orders from sell history sorted ascending by createdAt', async () => {
+  await new Order(orderOne).save();
+  await new Order(orderTwo).save();
+
+  const {
+    body: { orders, orderCount },
+  } = await request(app)
+    .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=createdAt:asc`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(orders).toHaveLength(2);
+  expect(new Date(orders[0].createdAt) < new Date(orders[1].createdAt)).toEqual(true);
+  expect(orderCount).toEqual(2);
+});
+
+test('Should fetch two orders from sell history sorted descending by createdAt', async () => {
+  await new Order(orderOne).save();
+  await new Order(orderTwo).save();
+
+  const {
+    body: { orders, orderCount },
+  } = await request(app)
+    .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=createdAt:desc`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+  expect(orders).toHaveLength(2);
+  expect(new Date(orders[0].createdAt) > new Date(orders[1].createdAt)).toEqual(true);
+  expect(orderCount).toEqual(2);
+});
+
+test('Should NOT fetch orders from sell history when in db is placed order of userOne', async () => {
   await new Order(orderOne).save();
 
   const { body } = await request(app)
@@ -441,7 +521,7 @@ test('Should NOT fetch orders from sell history', async () => {
   expect(body.orderCount).toEqual(0);
 });
 
-test('Should NOT fetch placed orders', async () => {
+test('Should NOT fetch placed orders when in db is one placed order of userOne', async () => {
   await new Order(orderOne).save();
 
   const { body } = await request(app)
@@ -450,4 +530,153 @@ test('Should NOT fetch placed orders', async () => {
     .expect(200);
   expect(body.orders).toHaveLength(0);
   expect(body.orderCount).toEqual(0);
+});
+
+// * GET /orders/:id * //
+test('Should fetch correct orderOne with complete seller and buyer', async () => {
+  await new Order(orderOne).save();
+
+  const {
+    body: { order },
+  } = await request(app)
+    .get(`/orders/${orderOne._id}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(200);
+
+  const correctProducts = order.products.map((product) => getCorrectProduct(product));
+  expect(order).toEqual({
+    ...orderOne,
+    _id: orderOne._id.toJSON(),
+    __v: 0,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    seller: {
+      username: userTwo.username,
+      email: userTwo.email,
+      phone: userTwo.phone,
+    },
+    buyer: {
+      username: userOne.username,
+    },
+    products: correctProducts,
+  });
+  expect(order.createdAt).toBeDefined();
+  expect(order.updatedAt).toBeDefined();
+});
+
+test(`Should fetch correct orderOne with complete seller and buyer null if buyer's account has been deleted`, async () => {
+  await new Order(orderOne).save();
+
+  await request(app)
+    .delete(`/users/me`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ currentPassword: 'Pa$$w0rd' })
+    .expect(200);
+
+  const {
+    body: { order },
+  } = await request(app)
+    .get(`/orders/${orderOne._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+
+  const correctProducts = order.products.map((product) => getCorrectProduct(product));
+  expect(order).toEqual({
+    ...orderOne,
+    _id: orderOne._id.toJSON(),
+    __v: 0,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    seller: {
+      username: userTwo.username,
+      email: userTwo.email,
+      phone: userTwo.phone,
+    },
+    buyer: null,
+    products: correctProducts,
+  });
+  expect(order.createdAt).toBeDefined();
+  expect(order.updatedAt).toBeDefined();
+});
+
+test(`Should fetch correct orderOne with null seller and complete buyer if seller's account has been deleted`, async () => {
+  await new Order(orderOne).save();
+
+  await request(app)
+    .delete(`/users/me`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({ currentPassword: 'Pa$$w0rd' })
+    .expect(200);
+
+  const {
+    body: { order },
+  } = await request(app)
+    .get(`/orders/${orderOne._id}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(200);
+
+  const correctProducts = order.products.map((product) => getCorrectProduct(product));
+  expect(order).toEqual({
+    ...orderOne,
+    _id: orderOne._id.toJSON(),
+    __v: 0,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    seller: null,
+    buyer: {
+      username: userOne.username,
+    },
+    products: correctProducts,
+  });
+  expect(order.createdAt).toBeDefined();
+  expect(order.updatedAt).toBeDefined();
+});
+
+test('Should get 404 when incorrect ObjectID is passed', async () => {
+  await new Order(orderOne).save();
+  const incorrectId = new mongoose.Types.ObjectId();
+
+  const { body } = await request(app)
+    .get(`/orders/${incorrectId}`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(404);
+
+  expect(body).toEqual({
+    message: 'Such order does not exist',
+  });
+});
+
+test('Should get 500 when incorrect id is passed (but not ObjectID)', async () => {
+  const { body } = await request(app)
+    .get('/orders/incorrectid')
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(500);
+
+  expect(body.kind).toEqual('ObjectId');
+});
+
+test('Should get 403 when user is not a seller either a buyer', async () => {
+  await new Order(orderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${orderOne._id}`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .expect(403);
+
+  expect(body).toEqual({
+    message: 'You are not allowed to get this order details',
+  });
+});
+
+test('Should get 403 when user is not a seller either a buyer', async () => {
+  await new Order(orderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${orderOne._id}`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .expect(403);
+
+  expect(body).toEqual({
+    message: 'You are not allowed to get this order details',
+  });
 });

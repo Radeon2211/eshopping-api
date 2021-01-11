@@ -2,12 +2,17 @@ const validator = require('validator');
 
 const SELLER_USERNAME_POPULATE = {
   path: 'seller',
-  select: 'username',
+  select: 'username -_id',
 };
 
 const BUYER_USERNAME_POPULATE = {
   path: 'buyer',
-  select: 'username',
+  select: 'username -_id',
+};
+
+const ORDER_SELLER_POPULATE = {
+  path: 'seller',
+  select: 'username email phone -_id',
 };
 
 const CART_POPULATE = {
@@ -88,6 +93,7 @@ const DELIVERY_ADDRESS = {
 module.exports = {
   SELLER_USERNAME_POPULATE,
   BUYER_USERNAME_POPULATE,
+  ORDER_SELLER_POPULATE,
   CART_POPULATE,
   pages,
   orderTypes,

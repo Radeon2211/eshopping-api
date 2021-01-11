@@ -134,7 +134,7 @@ router.delete('/users/me', auth, async (req, res) => {
   try {
     await req.user.checkCurrentPassword(req.body);
     await req.user.remove();
-    res.send({ user: req.user });
+    res.send();
   } catch (err) {
     if (err.message) {
       res.status(400).send(err);

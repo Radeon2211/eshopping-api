@@ -6,6 +6,7 @@ const {
   orderTypes,
   SELLER_USERNAME_POPULATE,
   BUYER_USERNAME_POPULATE,
+  ORDER_SELLER_POPULATE,
 } = require('../shared/constants');
 const {
   createSortObject,
@@ -120,14 +121,35 @@ router.get('/orders', auth, async (req, res) => {
 
 router.get('/orders/:id', auth, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('seller').populate('buyer');
+    const order = await Order.findById(req.params.id)
+      .populate(ORDER_SELLER_POPULATE)
+      .populate(BUYER_USERNAME_POPULATE)
+      .lean();
+
     if (!order) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'Such order does not exist' });
     }
-    if (!order.seller.equals(req.user._id) && !order.buyer.equals(req.user._id)) {
-      return res.status(403).send();
+
+    let isDifferentSeller = true;
+    let isDifferentBuyer = true;
+    if (order.seller) {
+      if (order.seller.username === req.user.username) {
+        isDifferentSeller = false;
+      }
     }
-    res.send({ order });
+    if (order.buyer) {
+      if (order.buyer.username === req.user.username) {
+        isDifferentBuyer = false;
+      }
+    }
+
+    if (isDifferentSeller && isDifferentBuyer) {
+      return res.status(403).send({ message: 'You are not allowed to get this order details' });
+    }
+
+    const correctOrder = getCorrectOrders([order])[0];
+
+    res.send({ order: correctOrder });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -136,13 +158,25 @@ router.get('/orders/:id', auth, async (req, res) => {
 router.get('/orders/:id/:productId/photo', auth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
+
     if (!order) {
       return res.status(404).send();
     }
+
     const product = order.products.find(({ _id }) => _id.equals(req.params.productId));
+
     if (!product) {
       return res.status(404).send();
     }
+    if (product) {
+      if (!product.photo) {
+        return res.status(404).send();
+      }
+    }
+    if (!order.seller.equals(req.user._id) && !order.buyer.equals(req.user._id)) {
+      return res.status(403).send();
+    }
+
     res.set('Content-Type', 'image/jpeg');
     res.send(product.photo);
   } catch (err) {

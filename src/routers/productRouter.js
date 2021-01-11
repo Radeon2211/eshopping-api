@@ -73,7 +73,9 @@ router.get('/products', getCurrentUser, async (req, res) => {
         locale: 'en',
       },
       sort,
-    }).lean();
+    })
+      .populate(SELLER_USERNAME_POPULATE)
+      .lean();
 
     const productCount = await Product.countDocuments(match);
 
@@ -92,7 +94,7 @@ router.get('/products', getCurrentUser, async (req, res) => {
       },
     ]);
 
-    const correctProducts = products.map((product) => getCorrectProduct(product));
+    const correctProducts = products.map((product) => getCorrectProduct(product, true));
 
     res.send({ products: correctProducts, productCount, productPrices });
   } catch (err) {
@@ -106,7 +108,7 @@ router.get('/products/:id', async (req, res) => {
     if (!product) {
       return res.status(404).send({ message: 'Product not found' });
     }
-    const correctProduct = getCorrectProduct(product);
+    const correctProduct = getCorrectProduct(product, true);
     res.send({ product: correctProduct });
   } catch (err) {
     res.status(500).send(err);
@@ -140,7 +142,7 @@ router.patch('/products/:id/seller', auth, async (req, res) => {
     const leanProduct = await Product.findById(product._id)
       .populate(SELLER_USERNAME_POPULATE)
       .lean();
-    const correctProduct = getCorrectProduct(leanProduct);
+    const correctProduct = getCorrectProduct(leanProduct, true);
 
     res.send({ product: correctProduct });
   } catch (err) {
@@ -226,7 +228,7 @@ router.delete('/products/:id/photo', auth, async (req, res) => {
     if (!product || !product.photo) {
       return res.status(404).send();
     }
-    if (!product.seller.equals(req.user._id) && req.user.role !== 'admin') {
+    if (product.seller.username !== req.user.username && req.user.role !== 'admin') {
       return res.status(403).send();
     }
     product.photo = undefined;
