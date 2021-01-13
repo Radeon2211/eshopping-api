@@ -115,7 +115,7 @@ router.get('/products/:id', async (req, res) => {
   }
 });
 
-router.patch('/products/:id/seller', auth, async (req, res) => {
+router.patch('/products/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -184,17 +184,20 @@ router.post(
   upload.single('photo'),
   async (req, res) => {
     try {
+      const product = await Product.findById(req.params.id);
+
+      if (!product) {
+        return res.status(404).send({ message: 'Given product does not exist' });
+      }
+      if (!product.seller.equals(req.user._id)) {
+        return res.status(403).send({ message: 'You are not allowed to update this product' });
+      }
+
       const buffer = await sharp(req.file.buffer).resize({ height: 500 }).jpeg().toBuffer();
       const miniBuffer = await imagemin.buffer(buffer, {
         plugins: [mozjpeg({ quality: 60 })],
       });
-      const product = await Product.findOne({
-        _id: req.params.id,
-        seller: req.user._id,
-      }).populate(SELLER_USERNAME_POPULATE);
-      if (!product) {
-        throw new Error({ message: 'Product not found' });
-      }
+
       product.photo = miniBuffer;
       await product.save();
       res.send();

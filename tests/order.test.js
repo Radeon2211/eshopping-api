@@ -1,5 +1,7 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+const { ObjectId } = require('mongoose').Types.ObjectId;
+const fs = require('fs');
 const app = require('../src/app');
 const Order = require('../src/models/orderModel');
 const Product = require('../src/models/productModel');
@@ -59,9 +61,13 @@ test('Should create order with productTwo and update its quantity and get transa
   expect(productTwoDetails.quantity).toEqual(1);
   expect(productTwoDetails.quantitySold).toEqual(2);
   expect(productTwoDetails.buyerQuantity).toEqual(1);
+
   expect(body.transaction).toBeUndefined();
+
   expect(orders).toHaveLength(1);
-  expect(orders[0]).toMatchObject({
+  expect(orders[0]).toEqual({
+    _id: orders[0]._id,
+    __v: 0,
     seller: userTwo._id,
     buyer: userOne._id,
     overallPrice: productTwo.price * 2,
@@ -74,7 +80,13 @@ test('Should create order with productTwo and update its quantity and get transa
       },
     ],
     deliveryAddress: userOneDeliveryAddress,
+    createdAt: orders[0].createdAt,
+    updatedAt: orders[0].updatedAt,
   });
+  expect(ObjectId.isValid(orders[0]._id)).toEqual(true);
+  expect(orders[0].createdAt).toEqual(expect.any(Date));
+  expect(orders[0].updatedAt).toEqual(expect.any(Date));
+
   expect(body.cart[0].quantity).toEqual(1);
 });
 
@@ -111,8 +123,12 @@ test('Should create two orders with productTwo and productFour and clear cart', 
     .expect(201);
 
   const orders = await Order.find().lean();
+
   expect(orders).toHaveLength(2);
-  expect(orders[0]).toMatchObject({
+
+  expect(orders[0]).toEqual({
+    _id: orders[0]._id,
+    __v: 0,
     seller: userTwo._id,
     buyer: userOne._id,
     overallPrice: productTwo.price * 2,
@@ -125,8 +141,16 @@ test('Should create two orders with productTwo and productFour and clear cart', 
       },
     ],
     deliveryAddress: userOneDeliveryAddress,
+    createdAt: orders[0].createdAt,
+    updatedAt: orders[0].updatedAt,
   });
-  expect(orders[1]).toMatchObject({
+  expect(ObjectId.isValid(orders[0]._id)).toEqual(true);
+  expect(orders[0].createdAt).toEqual(expect.any(Date));
+  expect(orders[0].updatedAt).toEqual(expect.any(Date));
+
+  expect(orders[1]).toEqual({
+    _id: orders[1]._id,
+    __v: 0,
     seller: userThree._id,
     buyer: userOne._id,
     overallPrice: productFour.price * 2,
@@ -139,7 +163,13 @@ test('Should create two orders with productTwo and productFour and clear cart', 
       },
     ],
     deliveryAddress: userOneDeliveryAddress,
+    createdAt: orders[1].createdAt,
+    updatedAt: orders[1].updatedAt,
   });
+  expect(ObjectId.isValid(orders[1]._id)).toEqual(true);
+  expect(orders[1].createdAt).toEqual(expect.any(Date));
+  expect(orders[1].updatedAt).toEqual(expect.any(Date));
+
   expect(body.cart).toHaveLength(0);
 });
 
@@ -203,9 +233,11 @@ test('Should create three orders with productTwo and productFour and update its 
   expect(productTwoDetails.quantity).toEqual(1);
   expect(productTwoDetails.quantitySold).toEqual(2);
   expect(productTwoDetails.buyerQuantity).toEqual(1);
+
   expect(productFourDetails.quantity).toEqual(40);
   expect(productFourDetails.quantitySold).toEqual(10);
   expect(productFourDetails.buyerQuantity).toEqual(1);
+
   expect(orders).toHaveLength(3);
 });
 
@@ -236,8 +268,11 @@ test('Should create order with productTwo and delete it and get transaction unde
 
   expect(productTwoDetails).toBeNull();
   expect(body.transaction).toBeUndefined();
+
   expect(orders).toHaveLength(1);
-  expect(orders[0]).toMatchObject({
+  expect(orders[0]).toEqual({
+    _id: orders[0]._id,
+    __v: 0,
     seller: userTwo._id,
     buyer: userOne._id,
     overallPrice: productTwo.price * 3,
@@ -250,14 +285,20 @@ test('Should create order with productTwo and delete it and get transaction unde
       },
     ],
     deliveryAddress: userOneDeliveryAddress,
+    createdAt: orders[0].createdAt,
+    updatedAt: orders[0].updatedAt,
   });
+  expect(ObjectId.isValid(orders[0]._id)).toEqual(true);
+  expect(orders[0].createdAt).toEqual(expect.any(Date));
+  expect(orders[0].updatedAt).toEqual(expect.any(Date));
+
   expect(body.cart).toHaveLength(1);
   expect(body.cart[0].product._id).toEqual(productFour._id.toJSON());
 });
 
 test('Should NOT create order and get transaction with updated item', async () => {
   await request(app)
-    .patch(`/products/${productTwo._id}/seller`)
+    .patch(`/products/${productTwo._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantity: 1,
@@ -290,6 +331,7 @@ test('Should NOT create order and get transaction with updated item', async () =
   expect(productTwoDetails.quantity).toEqual(1);
   expect(productTwoDetails.quantitySold).toEqual(0);
   expect(productTwoDetails.buyerQuantity).toEqual(0);
+
   expect(body.transaction).toEqual([
     {
       _id: productTwo._id.toJSON(),
@@ -302,6 +344,7 @@ test('Should NOT create order and get transaction with updated item', async () =
       },
     },
   ]);
+
   expect(orders).toHaveLength(0);
 });
 
@@ -360,20 +403,29 @@ test('Should NOT create order and get 403 if product seller is the same as buyer
   const orders = await Order.find().lean();
 
   expect(orders).toHaveLength(0);
-  expect(body.message).toEqual(`You can't buy your own products`);
+  expect(body).toEqual({
+    message: `You can't buy your own products`,
+  });
 });
 
 // * GET /orders * //
 test('Should fetch one placed order with correct data and orderCount 1', async () => {
   await new Order(orderOne).save();
 
-  const { body } = await request(app)
+  const {
+    body: { orders, orderCount },
+  } = await request(app)
     .get(`/orders?type=${orderTypes.PLACED_ORDERS}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .expect(200);
-  expect(body.orders).toHaveLength(1);
-  expect(body.orderCount).toEqual(1);
-  expect(body.orders[0]).toMatchObject({
+
+  expect(orders).toHaveLength(1);
+  expect(orderCount).toEqual(1);
+
+  const correctOrderOneProducts = orders[0].products.map((product) => getCorrectProduct(product));
+
+  expect(orders[0]).toEqual({
+    __v: 0,
     _id: orderOne._id.toJSON(),
     seller: {
       username: userTwo.username,
@@ -383,17 +435,12 @@ test('Should fetch one placed order with correct data and orderCount 1', async (
     },
     deliveryAddress: orderOne.deliveryAddress,
     overallPrice: orderOne.overallPrice,
-    products: [
-      {
-        ...orderOne.products[0],
-        _id: orderOne.products[0]._id.toJSON(),
-      },
-      {
-        ...orderOne.products[1],
-        _id: orderOne.products[1]._id.toJSON(),
-      },
-    ],
+    products: correctOrderOneProducts,
+    createdAt: orders[0].createdAt,
+    updatedAt: orders[0].updatedAt,
   });
+  expect(orders[0].createdAt).toBeDefined();
+  expect(orders[0].updatedAt).toBeDefined();
 });
 
 test('Should fetch one order from sell history and orderCount 1', async () => {
@@ -403,6 +450,7 @@ test('Should fetch one order from sell history and orderCount 1', async () => {
     .get(`/orders?type=${orderTypes.SELL_HISTORY}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(1);
   expect(body.orderCount).toEqual(1);
 });
@@ -415,6 +463,7 @@ test('Should fetch two placed orders and orderCount 2', async () => {
     .get(`/orders?type=${orderTypes.PLACED_ORDERS}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(2);
   expect(body.orderCount).toEqual(2);
 });
@@ -427,6 +476,7 @@ test('Should fetch two orders from sell history and orderCount 2', async () => {
     .get(`/orders?type=${orderTypes.SELL_HISTORY}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(2);
   expect(body.orderCount).toEqual(2);
 });
@@ -446,6 +496,7 @@ test('Should fetch two placed orders at second page and orderCount 8', async () 
     .get(`/orders?type=${orderTypes.PLACED_ORDERS}&p=2`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(2);
   expect(body.orderCount).toEqual(8);
 });
@@ -460,6 +511,7 @@ test('Should fetch two orders from sell history sorted ascending by price (savin
     .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=overallPrice:asc`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(orders).toHaveLength(2);
   expect(orders[1].overallPrice).toBeGreaterThan(orders[0].overallPrice);
   expect(orderCount).toEqual(2);
@@ -475,6 +527,7 @@ test('Should fetch two orders from sell history sorted descending by price (savi
     .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=overallPrice:desc`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(orders).toHaveLength(2);
   expect(orders[0].overallPrice).toBeGreaterThan(orders[1].overallPrice);
   expect(orderCount).toEqual(2);
@@ -490,6 +543,7 @@ test('Should fetch two orders from sell history sorted ascending by createdAt', 
     .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=createdAt:asc`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(orders).toHaveLength(2);
   expect(new Date(orders[0].createdAt) < new Date(orders[1].createdAt)).toEqual(true);
   expect(orderCount).toEqual(2);
@@ -505,6 +559,7 @@ test('Should fetch two orders from sell history sorted descending by createdAt',
     .get(`/orders?type=${orderTypes.SELL_HISTORY}&sortBy=createdAt:desc`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(orders).toHaveLength(2);
   expect(new Date(orders[0].createdAt) > new Date(orders[1].createdAt)).toEqual(true);
   expect(orderCount).toEqual(2);
@@ -517,6 +572,7 @@ test('Should NOT fetch orders from sell history when in db is placed order of us
     .get(`/orders?type=${orderTypes.SELL_HISTORY}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(0);
   expect(body.orderCount).toEqual(0);
 });
@@ -528,6 +584,7 @@ test('Should NOT fetch placed orders when in db is one placed order of userOne',
     .get(`/orders?type=${orderTypes.PLACED_ORDERS}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .expect(200);
+
   expect(body.orders).toHaveLength(0);
   expect(body.orderCount).toEqual(0);
 });
@@ -544,6 +601,7 @@ test('Should fetch correct orderOne with complete seller and buyer', async () =>
     .expect(200);
 
   const correctProducts = order.products.map((product) => getCorrectProduct(product));
+
   expect(order).toEqual({
     ...orderOne,
     _id: orderOne._id.toJSON(),
@@ -570,7 +628,7 @@ test(`Should fetch correct orderOne with complete seller and buyer null if buyer
   await request(app)
     .delete(`/users/me`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .send({ currentPassword: 'Pa$$w0rd' })
+    .send({ currentPassword: userOne.password })
     .expect(200);
 
   const {
@@ -605,7 +663,7 @@ test(`Should fetch correct orderOne with null seller and complete buyer if selle
   await request(app)
     .delete(`/users/me`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-    .send({ currentPassword: 'Pa$$w0rd' })
+    .send({ currentPassword: userTwo.password })
     .expect(200);
 
   const {
@@ -616,6 +674,7 @@ test(`Should fetch correct orderOne with null seller and complete buyer if selle
     .expect(200);
 
   const correctProducts = order.products.map((product) => getCorrectProduct(product));
+
   expect(order).toEqual({
     ...orderOne,
     _id: orderOne._id.toJSON(),
@@ -678,5 +737,111 @@ test('Should get 403 when user is not a seller either a buyer', async () => {
 
   expect(body).toEqual({
     message: 'You are not allowed to get this order details',
+  });
+});
+
+// * /orders/:id/:productId/photo * //
+test('Should get a photo of first product of first order', async () => {
+  const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
+  const photoChunks = [];
+  for await (const chunk of photoStream) {
+    photoChunks.push(chunk);
+  }
+  const bufferPhoto = Buffer.concat(photoChunks);
+
+  const updatedOrderOne = {
+    ...orderOne,
+    products: [
+      {
+        ...orderOne.products[0],
+        photo: bufferPhoto,
+      },
+      orderOne.products[1],
+    ],
+  };
+  await new Order(updatedOrderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${updatedOrderOne._id}/${productTwo._id}/photo`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(200);
+
+  expect(body).toEqual(expect.any(Buffer));
+});
+
+test('Should get 404 when incorrect ObjectID of order is passed', async () => {
+  const incorrectId = new mongoose.Types.ObjectId();
+  const { body } = await request(app)
+    .get(`/orders/${incorrectId}/${productTwo._id}/photo`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(404);
+
+  expect(body).toEqual({
+    message: 'Such order does not exist',
+  });
+});
+
+test('Should get 500 when incorrect id (but not ObjectID) of order is passed', async () => {
+  const { body } = await request(app)
+    .get(`/orders/incorrectId/${productTwo._id}/photo`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(500);
+
+  expect(body.kind).toEqual('ObjectId');
+});
+
+test('Should get 404 when fetching photo of product which does not exist in given order', async () => {
+  await new Order(orderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${orderOne._id}/${productOne._id}/photo`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(404);
+
+  expect(body).toEqual({
+    message: 'This product does not exist in given order',
+  });
+});
+
+test('Should get 404 when fetching product photo which does not have any photo', async () => {
+  await new Order(orderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${orderOne._id}/${productTwo._id}/photo`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .expect(404);
+
+  expect(body).toEqual({
+    message: 'This product does not have any photo',
+  });
+});
+
+test('Should get 403 when user is neither seller and a buyer of order', async () => {
+  const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
+  const photoChunks = [];
+  for await (const chunk of photoStream) {
+    photoChunks.push(chunk);
+  }
+  const bufferPhoto = Buffer.concat(photoChunks);
+
+  const updatedOrderOne = {
+    ...orderOne,
+    products: [
+      {
+        ...orderOne.products[0],
+        photo: bufferPhoto,
+      },
+      orderOne.products[1],
+    ],
+  };
+  await new Order(updatedOrderOne).save();
+
+  const { body } = await request(app)
+    .get(`/orders/${updatedOrderOne._id}/${productTwo._id}/photo`)
+    .set('Cookie', [`token=${userThree.tokens[0].token}`])
+    .expect(403);
+
+  expect(body).toEqual({
+    message: 'You are not allowed to get this photo',
   });
 });

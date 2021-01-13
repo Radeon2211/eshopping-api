@@ -160,21 +160,19 @@ router.get('/orders/:id/:productId/photo', auth, async (req, res) => {
     const order = await Order.findById(req.params.id);
 
     if (!order) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'Such order does not exist' });
     }
 
     const product = order.products.find(({ _id }) => _id.equals(req.params.productId));
 
     if (!product) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'This product does not exist in given order' });
     }
-    if (product) {
-      if (!product.photo) {
-        return res.status(404).send();
-      }
+    if (!product.photo) {
+      return res.status(404).send({ message: 'This product does not have any photo' });
     }
     if (!order.seller.equals(req.user._id) && !order.buyer.equals(req.user._id)) {
-      return res.status(403).send();
+      return res.status(403).send({ message: 'You are not allowed to get this photo' });
     }
 
     res.set('Content-Type', 'image/jpeg');

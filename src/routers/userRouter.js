@@ -159,7 +159,7 @@ router.patch('/cart/add', auth, async (req, res) => {
     const newItem = req.body;
     const productDetails = await Product.findById(newItem.product).lean();
     if (!productDetails) {
-      return res.status(403).send({ message: `This product probably has already been sold` });
+      return res.status(404).send({ message: 'This product probably has already been sold' });
     }
     if (productDetails.seller.equals(req.user._id)) {
       return res.status(403).send({ message: `You can't add your own product to the cart!` });

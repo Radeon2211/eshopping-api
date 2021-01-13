@@ -14,7 +14,7 @@ const createSortObject = (req) => {
 };
 
 const getCorrectProduct = (product, getSeller = false) => {
-  let seller = {};
+  let { seller } = product;
   if (getSeller) {
     seller = {
       username: product.seller.username,
@@ -23,7 +23,7 @@ const getCorrectProduct = (product, getSeller = false) => {
   return {
     ...product,
     photo: Boolean(product.photo),
-    ...seller,
+    seller,
   };
 };
 
@@ -200,8 +200,12 @@ module.exports = {
   getCorrectProduct,
   getCorrectOrders,
   getFullUser,
+  checkCartDifference,
+  verifyCart,
   updateUserCart,
+  getTransactionProduct,
   verifyItemsToTransaction,
+  getOrderProduct,
   verifyItemsToBuy,
   splitOrderProducts,
 };

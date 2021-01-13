@@ -9,6 +9,7 @@ const {
   userThree,
   productOne,
   productTwo,
+  productThree,
   productFour,
   orderOne,
   setupDatabase,
@@ -25,8 +26,12 @@ const {
   getCorrectProduct,
   getCorrectOrders,
   getFullUser,
+  checkCartDifference,
+  verifyCart,
   updateUserCart,
+  getTransactionProduct,
   verifyItemsToTransaction,
+  getOrderProduct,
   verifyItemsToBuy,
   splitOrderProducts,
 } = require('../src/shared/utility');
@@ -36,42 +41,72 @@ beforeEach(setupDatabase);
 // * CONSTANTS * //
 
 // * SELLER_USERNAME_POPULATE
-test('Should get product with seller username', async () => {
+test(`Should get product with seller username if seller's account exists`, async () => {
   const product = await Product.findById(productOne._id).populate(SELLER_USERNAME_POPULATE).lean();
-  expect(product).toMatchObject({
-    ...productOne,
-    seller: {
-      username: userOne.username,
-    },
+  expect(product.seller).toEqual({
+    username: userOne.username,
   });
+});
+
+test(`Should get order with seller null if seller's account does not exist`, async () => {
+  await new Order(orderOne).save();
+
+  await request(app)
+    .delete(`/users/me`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({ currentPassword: userTwo.password })
+    .expect(200);
+
+  const order = await Order.findById(orderOne._id).populate(SELLER_USERNAME_POPULATE).lean();
+  expect(order.seller).toBeNull();
 });
 
 // * BUYER_USERNAME_POPULATE
-test('Should get order with buyer username', async () => {
+test(`Should get order with buyer username if buyer's account exists`, async () => {
   await new Order(orderOne).save();
 
   const order = await Order.findById(orderOne._id).populate(BUYER_USERNAME_POPULATE).lean();
-  expect(order).toMatchObject({
-    ...orderOne,
-    buyer: {
-      username: userOne.username,
-    },
+  expect(order.buyer).toEqual({
+    username: userOne.username,
   });
 });
 
+test(`Should get order with buyer null if buyer's account does not exist`, async () => {
+  await new Order(orderOne).save();
+
+  await request(app)
+    .delete(`/users/me`)
+    .set('Cookie', [`token=${userOne.tokens[0].token}`])
+    .send({ currentPassword: userOne.password })
+    .expect(200);
+
+  const order = await Order.findById(orderOne._id).populate(BUYER_USERNAME_POPULATE).lean();
+  expect(order.buyer).toBeNull();
+});
+
 // * ORDER_SELLER_POPULATE
-test('Should get order with seller username, email and phone', async () => {
+test(`Should get order with seller username, email and phone if seller's account exists`, async () => {
   await new Order(orderOne).save();
 
   const order = await Order.findById(orderOne._id).populate(ORDER_SELLER_POPULATE).lean();
-  expect(order).toMatchObject({
-    ...orderOne,
-    seller: {
-      username: userTwo.username,
-      email: userTwo.email,
-      phone: userTwo.phone,
-    },
+  expect(order.seller).toEqual({
+    username: userTwo.username,
+    email: userTwo.email,
+    phone: userTwo.phone,
   });
+});
+
+test(`Should get order with seller null if seller's account does not exist`, async () => {
+  await new Order(orderOne).save();
+
+  await request(app)
+    .delete(`/users/me`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({ currentPassword: userTwo.password })
+    .expect(200);
+
+  const order = await Order.findById(orderOne._id).populate(ORDER_SELLER_POPULATE).lean();
+  expect(order.seller).toBeNull();
 });
 
 // * CART_POPULATE
@@ -80,21 +115,41 @@ test('Should get user with poulated cart and seller username of each product', a
 
   expect(cart).toHaveLength(2);
 
-  expect(cart[0].quantity).toEqual(2);
-  expect(cart[0].product).toMatchObject({
-    ...productTwo,
-    seller: {
-      username: userTwo.username,
+  expect(cart[0]).toEqual({
+    _id: userOne.cart[0]._id,
+    quantity: 2,
+    product: {
+      ...productTwo,
+      seller: {
+        username: userTwo.username,
+      },
+      __v: 0,
+      quantitySold: 0,
+      buyerQuantity: 0,
+      createdAt: cart[0].product.createdAt,
+      updatedAt: cart[0].product.updatedAt,
     },
   });
+  expect(cart[0].product.createdAt).toBeDefined();
+  expect(cart[0].product.updatedAt).toBeDefined();
 
-  expect(cart[1].quantity).toEqual(48);
-  expect(cart[1].product).toMatchObject({
-    ...productFour,
-    seller: {
-      username: userThree.username,
+  expect(cart[1]).toEqual({
+    _id: userOne.cart[1]._id,
+    quantity: 48,
+    product: {
+      ...productFour,
+      seller: {
+        username: userThree.username,
+      },
+      __v: 0,
+      quantitySold: 0,
+      buyerQuantity: 0,
+      createdAt: cart[1].product.createdAt,
+      updatedAt: cart[1].product.updatedAt,
     },
   });
+  expect(cart[1].product.createdAt).toBeDefined();
+  expect(cart[1].product.updatedAt).toBeDefined();
 });
 
 // * MyError
@@ -147,15 +202,17 @@ test('Should create sort object with name ascending', async () => {
 });
 
 // * getCorrectProduct()
-test('Should get product with boolean photo - false without seller username', async () => {
+test('Should get product with boolean photo false without seller username', async () => {
   const product = await Product.findById(productOne._id).lean();
   const correctProduct = getCorrectProduct(product);
 
-  expect(correctProduct.photo).toEqual(false);
-  expect(correctProduct.seller).toEqual(product.seller);
+  expect(correctProduct).toEqual({
+    ...product,
+    photo: false,
+  });
 });
 
-test('Should get product with boolean photo - true with seller username when second argument is true', async () => {
+test('Should get product with boolean photo true with seller username when second argument is true', async () => {
   await request(app)
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -165,9 +222,12 @@ test('Should get product with boolean photo - true with seller username when sec
   const product = await Product.findById(productOne._id).populate(SELLER_USERNAME_POPULATE).lean();
   const correctProduct = getCorrectProduct(product, true);
 
-  expect(correctProduct.photo).toEqual(true);
-  expect(correctProduct.seller).toEqual({
-    username: userOne.username,
+  expect(correctProduct).toEqual({
+    ...product,
+    photo: true,
+    seller: {
+      username: userOne.username,
+    },
   });
 });
 
@@ -181,7 +241,7 @@ test('Should get orders with boolean photo products', async () => {
   const correctOrders = getCorrectOrders(orders);
 
   expect(correctOrders).toHaveLength(1);
-  expect(correctOrders[0].products).toMatchObject([
+  expect(correctOrders[0].products).toEqual([
     {
       ...orderOne.products[0],
       photo: false,
@@ -197,339 +257,652 @@ test('Should get orders with boolean photo products', async () => {
 test('Should get user without password and tokens but with populated cart with boolean product photo', async () => {
   const user = await getFullUser(userOne._id);
 
-  expect(user.password).not.toBeDefined();
-  expect(user.tokens).not.toBeDefined();
-
-  expect(user.cart).toHaveLength(2);
-
-  expect(user.cart[0].quantity).toEqual(2);
-  expect(user.cart[0].product).toMatchObject({
-    ...productTwo,
-    photo: false,
-    seller: {
-      username: userTwo.username,
-    },
+  expect(user).toEqual({
+    _id: userOne._id,
+    contacts: userOne.contacts,
+    firstName: userOne.firstName,
+    lastName: userOne.lastName,
+    username: userOne.username,
+    email: userOne.email,
+    street: userOne.street,
+    zipCode: userOne.zipCode,
+    city: userOne.city,
+    country: userOne.country,
+    phone: userOne.phone,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    cart: [
+      {
+        _id: userOne.cart[0]._id,
+        quantity: 2,
+        product: {
+          ...productTwo,
+          photo: false,
+          seller: {
+            username: userTwo.username,
+          },
+          __v: 0,
+          quantitySold: 0,
+          buyerQuantity: 0,
+          createdAt: user.cart[0].product.createdAt,
+          updatedAt: user.cart[0].product.updatedAt,
+        },
+      },
+      {
+        _id: userOne.cart[1]._id,
+        quantity: 48,
+        product: {
+          ...productFour,
+          photo: false,
+          seller: {
+            username: userThree.username,
+          },
+          __v: 0,
+          quantitySold: 0,
+          buyerQuantity: 0,
+          createdAt: user.cart[1].product.createdAt,
+          updatedAt: user.cart[1].product.updatedAt,
+        },
+      },
+    ],
   });
 
-  expect(user.cart[1].quantity).toEqual(48);
-  expect(user.cart[1].product).toMatchObject({
-    ...productFour,
-    photo: false,
-    seller: {
-      username: userThree.username,
+  expect(user.createdAt).toBeDefined();
+  expect(user.updatedAt).toBeDefined();
+});
+
+// * checkCartDifference()
+test('Should return true if carts are different (product of first item is deleted before)', async () => {
+  const userOneCart = userOne.cart;
+
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+
+  const verifiedUserOneCart = await verifyCart(userOneCart);
+
+  const isDifferent = await checkCartDifference(userOneCart, verifiedUserOneCart);
+  expect(isDifferent).toEqual(true);
+});
+
+test('Should return true if carts are different (product of first item changed quantity to 1 before - to lower than it is in cart)', async () => {
+  const userOneCart = userOne.cart;
+
+  await request(app)
+    .patch(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({
+      quantity: 1,
+    })
+    .expect(200);
+
+  const verifiedUserOneCart = await verifyCart(userOneCart);
+
+  const isDifferent = await checkCartDifference(userOneCart, verifiedUserOneCart);
+  expect(isDifferent).toEqual(true);
+});
+
+test('Should return false if carts are the same', async () => {
+  const userOneCart = userOne.cart;
+  const verifiedUserOneCart = await verifyCart(userOneCart);
+
+  const isDifferent = await checkCartDifference(userOneCart, verifiedUserOneCart);
+  expect(isDifferent).toEqual(false);
+});
+
+// * verifyCart()
+test('Should return the same cart if nothing changed', async () => {
+  const verifiedUserOneCart = await verifyCart(userOne.cart);
+
+  expect(verifiedUserOneCart).toEqual([
+    {
+      _id: userOne.cart[0]._id.toJSON(),
+      quantity: 2,
+      product: userOne.cart[0].product.toJSON(),
     },
-  });
+    {
+      _id: userOne.cart[1]._id.toJSON(),
+      quantity: 48,
+      product: userOne.cart[1].product.toJSON(),
+    },
+  ]);
+});
+
+test('Should return only second item from cart (product of first item is deleted before)', async () => {
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+
+  const verifiedUserOneCart = await verifyCart(userOne.cart);
+
+  expect(verifiedUserOneCart).toEqual([
+    {
+      _id: userOne.cart[1]._id.toJSON(),
+      quantity: 48,
+      product: userOne.cart[1].product.toJSON(),
+    },
+  ]);
+});
+
+test('Should return cart with edited first item (product of first item changed quantity to 1 before - to lower than it is in cart)', async () => {
+  await request(app)
+    .patch(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .send({
+      quantity: 1,
+    })
+    .expect(200);
+
+  const verifiedUserOneCart = await verifyCart(userOne.cart);
+
+  expect(verifiedUserOneCart).toEqual([
+    {
+      _id: userOne.cart[0]._id.toJSON(),
+      quantity: 1,
+      product: userOne.cart[0].product.toJSON(),
+    },
+    {
+      _id: userOne.cart[1]._id.toJSON(),
+      quantity: 48,
+      product: userOne.cart[1].product.toJSON(),
+    },
+  ]);
 });
 
 // * updateUserCart()
 test('Should return isDifferent false if products from cart did not change before', async () => {
   const user = await User.findById(userOne._id);
   const isDifferent = await updateUserCart(user, user.cart);
+
+  const userAfterUpdate = await User.findById(userOne._id).lean();
+
   expect(isDifferent).toEqual(false);
+  expect(userAfterUpdate.cart).toEqual(userOne.cart);
 });
 
 test('Should update cart and return isDifferent true if first product from cart changed quantity and it is lower than quantity in cart', async () => {
   await request(app)
-    .patch(`/products/${productTwo._id}/seller`)
+    .patch(`/products/${productTwo._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantity: 1,
-    });
+    })
+    .expect(200);
 
   const user = await User.findById(userOne._id);
   const isDifferent = await updateUserCart(user, user.cart);
-
-  const { cart } = await getFullUser(userOne._id);
+  const userAfterUpdate = await User.findById(userOne._id).lean();
 
   expect(isDifferent).toEqual(true);
+  expect(userAfterUpdate.cart).toEqual([
+    {
+      ...userOne.cart[0],
+      quantity: 1,
+    },
+    userOne.cart[1],
+  ]);
+});
 
-  expect(cart).toHaveLength(2);
+test('Should update cart and return isDifferent true if first product from cart is deleted before', async () => {
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
 
-  expect(cart[0].quantity).toEqual(1);
-  expect(cart[0].product).toMatchObject({
-    ...productTwo,
-    quantity: 1,
+  const user = await User.findById(userOne._id);
+  const isDifferent = await updateUserCart(user, user.cart);
+  const userAfterUpdate = await User.findById(userOne._id).lean();
+
+  expect(isDifferent).toEqual(true);
+  expect(userAfterUpdate.cart).toEqual([userOne.cart[1]]);
+});
+
+// * getTransactionProduct()
+test('Should get correct transaction product which has populated seller username', async () => {
+  const product = await Product.findById(productOne._id).populate(SELLER_USERNAME_POPULATE).lean();
+  const transactionProduct = getTransactionProduct(product);
+  expect(transactionProduct).toEqual({
+    _id: productOne._id,
+    name: productOne.name,
+    price: productOne.price,
+    quantity: productOne.quantity,
     photo: false,
     seller: {
-      username: userTwo.username,
+      username: userOne.username,
     },
   });
+});
 
-  expect(cart[1].quantity).toEqual(48);
-  expect(cart[1].product).toMatchObject({
-    ...productFour,
+test('Should get correct transaction product which has populated full seller', async () => {
+  const product = await Product.findById(productOne._id).populate('seller').lean();
+  const transactionProduct = getTransactionProduct(product);
+  expect(transactionProduct).toEqual({
+    _id: productOne._id,
+    name: productOne.name,
+    price: productOne.price,
+    quantity: productOne.quantity,
     photo: false,
     seller: {
-      username: userThree.username,
+      username: userOne.username,
     },
   });
 });
 
 // * verifyItemsToTransaction()
-test('Should verify items to transaction (and update none) and get isDifferent false', async () => {
+test('Should verify items to transaction and get isDifferent false (and update cart but cart should not change)', async () => {
   const user = await User.findById(userOne._id);
 
   const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, true, user);
 
-  expect(transaction).toHaveLength(2);
-
-  expect(transaction[0]).toEqual({
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 2,
-    photo: false,
-    seller: {
-      username: userTwo.username,
-    },
-  });
-
-  expect(transaction[1]).toEqual({
-    _id: productFour._id,
-    name: productFour.name,
-    price: productFour.price,
-    quantity: 48,
-    photo: false,
-    seller: {
-      username: userThree.username,
-    },
-  });
+  const userAfterVerify = await User.findById(userOne._id).lean();
+  expect(userAfterVerify.cart).toEqual(userOne.cart);
 
   expect(isDifferent).toEqual(false);
+  expect(transaction).toEqual([
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 2,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
+    },
+    {
+      _id: productFour._id,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 48,
+      photo: false,
+      seller: {
+        username: userThree.username,
+      },
+    },
+  ]);
 });
 
-test('Should verify items to transaction (and update first item) and get isDifferent true', async () => {
+test('Should verify items to transaction and get isDifferent true if product of first item changed quantity to lower than it is in cart (and update cart and cart should change)', async () => {
+  const user = await User.findById(userOne._id);
+
   await request(app)
-    .patch(`/products/${productTwo._id}/seller`)
+    .patch(`/products/${productTwo._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantity: 1,
-    });
+    })
+    .expect(200);
 
-  const user = await User.findById(userOne._id);
+  const singleItem = false;
+  const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, !singleItem, user);
 
-  const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, true, user);
-
-  expect(transaction).toHaveLength(2);
-
-  expect(transaction[0]).toEqual({
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+  const userAfterVerify = await User.findById(userOne._id).lean();
+  expect(userAfterVerify.cart).toEqual([
+    {
+      ...userOne.cart[0],
+      quantity: 1,
     },
-  });
-
-  expect(transaction[1]).toEqual({
-    _id: productFour._id,
-    name: productFour.name,
-    price: productFour.price,
-    quantity: 48,
-    photo: false,
-    seller: {
-      username: userThree.username,
-    },
-  });
+    userOne.cart[1],
+  ]);
 
   expect(isDifferent).toEqual(true);
+  expect(transaction).toEqual([
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
+    },
+    {
+      _id: productFour._id,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 48,
+      photo: false,
+      seller: {
+        username: userThree.username,
+      },
+    },
+  ]);
+});
+
+test('Should verify items to transaction and get isDifferent true if product of first item is deleted (and update cart and cart should change)', async () => {
+  const user = await User.findById(userOne._id);
+
+  await request(app)
+    .delete(`/products/${productTwo._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
+
+  const singleItem = false;
+  const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, !singleItem, user);
+
+  const userAfterVerify = await User.findById(userOne._id).lean();
+  expect(userAfterVerify.cart).toEqual([userOne.cart[1]]);
+
+  expect(isDifferent).toEqual(true);
+  expect(transaction).toEqual([
+    {
+      _id: productFour._id,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 48,
+      photo: false,
+      seller: {
+        username: userThree.username,
+      },
+    },
+  ]);
+});
+
+// * getOrderProduct()
+test('Should get correct order product which has populated full seller', async () => {
+  const product = await Product.findById(productOne._id).populate('seller').lean();
+  const orderProduct = getOrderProduct(product);
+  expect(orderProduct).toEqual({
+    _id: productOne._id,
+    name: productOne.name,
+    price: productOne.price,
+    quantity: productOne.quantity,
+    photo: undefined,
+    seller: productOne.seller,
+  });
 });
 
 // * verifyItemsToBuy()
-test('Should get correct orderProducts and isDifferent false and isBuyingOwnProducts false', async () => {
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+test('Should get correct orderProducts, transaction and isDifferent false and isBuyingOwnProducts false if items are correct', async () => {
+  const transactionToVerify = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
     },
-  };
+  ];
 
   const { transaction, orderProducts, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
-    [item],
+    transactionToVerify,
     userOne._id,
   );
 
-  expect(transaction).toHaveLength(1);
-  expect(transaction[0]).toEqual(item);
-  expect(orderProducts).toHaveLength(1);
-
-  expect(orderProducts[0]).toEqual({
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: productTwo.photo,
-    seller: productTwo.seller,
-  });
-
   expect(isDifferent).toEqual(false);
   expect(isBuyingOwnProducts).toEqual(false);
-});
 
-test('Should get transaction with updated item and isDifferent true if given quantity is too high', async () => {
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 10,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+  expect(transaction).toEqual(transactionToVerify);
+
+  expect(orderProducts).toEqual([
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: productTwo.photo,
+      seller: productTwo.seller,
     },
-  };
-
-  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
-
-  expect(transaction).toHaveLength(1);
-  expect(transaction[0]).toEqual({
-    ...item,
-    quantity: 3,
-  });
-  expect(isDifferent).toEqual(true);
+  ]);
 });
 
-test('Should get transaction with updated item and isDifferent true if quantity changed before', async () => {
+test('Should get orderProducts and transaction with updated item and isDifferent true and isBuyingOwnProducts false if given quantity is too high', async () => {
+  const transactionToVerify = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 10,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
+    },
+  ];
+
+  const { orderProducts, transaction, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
+    transactionToVerify,
+    userOne._id,
+  );
+
+  expect(isDifferent).toEqual(true);
+  expect(isBuyingOwnProducts).toEqual(false);
+
+  expect(transaction).toEqual([
+    {
+      ...transactionToVerify[0],
+      quantity: 3,
+    },
+  ]);
+
+  expect(orderProducts).toEqual([
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 3,
+      photo: productTwo.photo,
+      seller: productTwo.seller,
+    },
+  ]);
+});
+
+test('Should get orderProducts and transaction with updated item and isDifferent true and isBuyingOwnProducts false if quantity changed before', async () => {
   await request(app)
-    .patch(`/products/${productTwo._id}/seller`)
+    .patch(`/products/${productTwo._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       quantity: 1,
     });
 
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 3,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+  const transactionToVerify = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 3,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
     },
-  };
+  ];
 
-  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
+  const { orderProducts, transaction, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
+    transactionToVerify,
+    userOne._id,
+  );
 
-  expect(transaction).toHaveLength(1);
-  expect(transaction[0]).toEqual({
-    ...item,
-    quantity: 1,
-  });
   expect(isDifferent).toEqual(true);
+  expect(isBuyingOwnProducts).toEqual(false);
+
+  expect(transaction).toEqual([
+    {
+      ...transactionToVerify[0],
+      quantity: 1,
+    },
+  ]);
+
+  expect(orderProducts).toEqual([
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: productTwo.photo,
+      seller: productTwo.seller,
+    },
+  ]);
 });
 
-test('Should get empty transaction and isDifferent true', async () => {
+test('Should get empty orderProducts and transaction and isDifferent true and isBuyingOwnProducts false', async () => {
   await request(app)
     .delete(`/products/${productTwo._id}`)
-    .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(200);
 
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+  const transactionToVerify = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 3,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
     },
-  };
+  ];
 
-  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
+  const { orderProducts, transaction, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
+    transactionToVerify,
+    userOne._id,
+  );
 
-  expect(transaction).toHaveLength(0);
   expect(isDifferent).toEqual(true);
-});
+  expect(isBuyingOwnProducts).toEqual(false);
 
-test('Should get empty transaction and isDifferent true', async () => {
-  await request(app)
-    .delete(`/products/${productTwo._id}`)
-    .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
-
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: false,
-    seller: {
-      username: userTwo.username,
-    },
-  };
-
-  const { transaction, isDifferent } = await verifyItemsToBuy([item], userOne._id);
+  expect(orderProducts).toHaveLength(0);
   expect(transaction).toHaveLength(0);
-  expect(isDifferent).toEqual(true);
 });
 
 test('Should get isBuyingOwnProducts true if product seller is the same as buyer', async () => {
-  const item = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: false,
-    seller: {
-      username: userTwo.username,
+  const transactionToVerify = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: false,
+      seller: {
+        username: userTwo.username,
+      },
     },
-  };
+  ];
 
-  const { isBuyingOwnProducts } = await verifyItemsToBuy([item], userTwo._id);
+  const { isBuyingOwnProducts } = await verifyItemsToBuy(transactionToVerify, userTwo._id);
 
   expect(isBuyingOwnProducts).toEqual(true);
 });
 
 // * splitOrderProduct()
-test('Should verify items to buy and get empty transaction and isDifferent true', async () => {
-  const item1 = {
-    _id: productTwo._id,
-    name: productTwo.name,
-    price: productTwo.price,
-    quantity: 1,
-    photo: productTwo.photo,
-    seller: userTwo._id,
-  };
+test('Should split two orderProducts to two orders if they are from different sellers', async () => {
+  const orderProducts = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: productTwo.photo,
+      seller: userTwo._id,
+    },
+    {
+      _id: productFour._id,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 1,
+      photo: productFour.photo,
+      seller: userThree._id,
+    },
+  ];
 
-  const item2 = {
-    _id: productFour._id,
-    name: productFour.name,
-    price: productFour.price,
-    quantity: 1,
-    photo: productFour.photo,
-    seller: userThree._id,
-  };
+  const splittedOrderProducts = await splitOrderProducts(orderProducts);
 
-  const splittedProducts = await splitOrderProducts([item1, item2]);
+  expect(splittedOrderProducts).toEqual([
+    {
+      seller: userTwo._id,
+      products: [
+        {
+          _id: productTwo._id,
+          name: productTwo.name,
+          price: productTwo.price,
+          quantity: 1,
+          photo: productTwo.photo,
+        },
+      ],
+    },
+    {
+      seller: userThree._id,
+      products: [
+        {
+          _id: productFour._id,
+          name: productFour.name,
+          price: productFour.price,
+          quantity: 1,
+          photo: productFour.photo,
+        },
+      ],
+    },
+  ]);
+});
 
-  expect(splittedProducts).toHaveLength(2);
+test('Should split three orderProducts to two orders if two of them are from the same seller', async () => {
+  const orderProducts = [
+    {
+      _id: productTwo._id,
+      name: productTwo.name,
+      price: productTwo.price,
+      quantity: 1,
+      photo: productTwo.photo,
+      seller: userTwo._id,
+    },
+    {
+      _id: productThree._id,
+      name: productThree.name,
+      price: productThree.price,
+      quantity: 1,
+      photo: productThree.photo,
+      seller: userThree._id,
+    },
+    {
+      _id: productFour._id,
+      name: productFour.name,
+      price: productFour.price,
+      quantity: 1,
+      photo: productFour.photo,
+      seller: userThree._id,
+    },
+  ];
 
-  expect(splittedProducts[0]).toEqual({
-    seller: userTwo._id,
-    products: [
-      {
-        _id: productTwo._id,
-        name: productTwo.name,
-        price: productTwo.price,
-        quantity: 1,
-        photo: productTwo.photo,
-      },
-    ],
-  });
+  const splittedOrderProducts = await splitOrderProducts(orderProducts);
 
-  expect(splittedProducts[1]).toEqual({
-    seller: userThree._id,
-    products: [
-      {
-        _id: productFour._id,
-        name: productFour.name,
-        price: productFour.price,
-        quantity: 1,
-        photo: productFour.photo,
-      },
-    ],
-  });
+  expect(splittedOrderProducts).toEqual([
+    {
+      seller: userTwo._id,
+      products: [
+        {
+          _id: productTwo._id,
+          name: productTwo.name,
+          price: productTwo.price,
+          quantity: 1,
+          photo: productTwo.photo,
+        },
+      ],
+    },
+    {
+      seller: userThree._id,
+      products: [
+        {
+          _id: productThree._id,
+          name: productThree.name,
+          price: productThree.price,
+          quantity: 1,
+          photo: productThree.photo,
+        },
+        {
+          _id: productFour._id,
+          name: productFour.name,
+          price: productFour.price,
+          quantity: 1,
+          photo: productFour.photo,
+        },
+      ],
+    },
+  ]);
 });

@@ -29,11 +29,11 @@ test('Should create product', async () => {
 });
 
 // * DELETING PRODUCTS
-test('Should NOT second user delete the first task', async () => {
+test('Should NOT userTwo delete the productOne', async () => {
   await request(app)
-    .delete(`/prodcuts/${productOne._id}`)
-    .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .expect(404);
+    .delete(`/products/${productOne._id}`)
+    .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+    .expect(403);
   const product = await Product.findById(productOne._id);
   expect(product).not.toBeNull();
 });
@@ -88,7 +88,7 @@ test('Should admin delete other user product', async () => {
 // * UPDATING PRODUCTS
 test('Should update product', async () => {
   const { body } = await request(app)
-    .patch(`/products/${productOne._id}/seller`)
+    .patch(`/products/${productOne._id}`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
     .send({
       name: 'Cool mushrooms',
@@ -105,7 +105,7 @@ test('Should update product', async () => {
 
 test('Should NOT update other user product', async () => {
   await request(app)
-    .patch(`/products/${productOne._id}/seller`)
+    .patch(`/products/${productOne._id}`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .send({
       name: 'Cool mushrooms',
@@ -204,7 +204,7 @@ test('Should NOT upload photo for first product by not a seller', async () => {
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userTwo.tokens[0].token}`])
     .attach('photo', 'tests/fixtures/mushrooms.jpg')
-    .expect(400);
+    .expect(403);
   const product = await Product.findById(productOne._id);
   expect(product.photo).toBeUndefined();
 });

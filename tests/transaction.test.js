@@ -25,7 +25,7 @@ test('Should get transaction products the same as in cart, isDifferent false, ca
 
 test('Should get transaction products the same as in cart, isDifferent true, cart length 2 with edited item', async () => {
   await request(app)
-    .patch(`/products/${productFour._id}/seller`)
+    .patch(`/products/${productFour._id}`)
     .set('Cookie', [`token=${userThree.tokens[0].token}`])
     .send({
       quantity: 40,
@@ -69,7 +69,7 @@ test('Should get transaction product the same as given, isDifferent false, cart 
 
 test('Should get transaction product edited, isDifferent true, cart null', async () => {
   await request(app)
-    .patch(`/products/${productFour._id}/seller`)
+    .patch(`/products/${productFour._id}`)
     .set('Cookie', [`token=${userThree.tokens[0].token}`])
     .send({
       quantity: 40,
