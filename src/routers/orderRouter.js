@@ -2,6 +2,7 @@ const express = require('express');
 const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
 const auth = require('../middleware/auth');
+const photoLimiter = require('../middleware/photoLimiter');
 const {
   orderTypes,
   SELLER_USERNAME_POPULATE,
@@ -155,7 +156,7 @@ router.get('/orders/:id', auth, async (req, res) => {
   }
 });
 
-router.get('/orders/:id/:productId/photo', auth, async (req, res) => {
+router.get('/orders/:id/:productId/photo', photoLimiter, auth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
 

@@ -1,4 +1,7 @@
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const parameterPollution = require('hpp');
 const cors = require('cors');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
@@ -9,12 +12,36 @@ const orderRouter = require('./routers/orderRouter');
 
 const app = express();
 
+app.enable('trust proxy');
+
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://192.168.1.109:3000', 'https://radeon2211.github.io'],
+    origin: ['http://192.168.1.109:3000', 'https://radeon2211.github.io'],
     credentials: true,
   }),
 );
+
+const limiter = rateLimit({
+  windowMs: 30 * 1000,
+  max: 30,
+  message: {
+    message: 'Too many requests, please wait 30 seconds',
+  },
+});
+
+app.use(parameterPollution());
+
+const unlessPhoto = (middleware) => (req, res, next) => {
+  if (req.path.includes('/photo')) {
+    return next();
+  }
+  return middleware(req, res, next);
+};
+
+app.use(unlessPhoto(limiter));
+
+app.use(helmet());
+app.use(helmet.hidePoweredBy());
 
 app.use(cookieParser());
 

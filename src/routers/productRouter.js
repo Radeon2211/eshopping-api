@@ -5,22 +5,25 @@ const sharp = require('sharp');
 const imagemin = require('imagemin');
 const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
+const User = require('../models/userModel');
 const auth = require('../middleware/auth');
 const getCurrentUser = require('../middleware/getCurrentUser');
+const photoLimiter = require('../middleware/photoLimiter');
 const { createSortObject, getCorrectProduct } = require('../shared/utility');
 const { pages, SELLER_USERNAME_POPULATE } = require('../shared/constants');
-const User = require('../models/userModel');
 
 const router = new express.Router();
 
 router.post('/products', auth, async (req, res) => {
-  const product = new Product({
-    ...req.body,
-    seller: req.user._id,
-  });
   try {
+    const product = new Product({
+      ...req.body.data,
+      seller: req.user._id,
+      quantitySold: 0,
+      buyerQuantity: 0,
+    });
     await product.save();
-    res.status(201).send({ product });
+    res.status(201).send({ productId: product._id });
   } catch (err) {
     res.status(400).send(err);
   }
@@ -44,8 +47,12 @@ router.get('/products', getCurrentUser, async (req, res) => {
       }
       break;
     case pages.USER_PRODUCTS:
-      const sellerDetails = await User.findOne({ username: sellerUsername });
-      match.seller = sellerDetails._id;
+      const sellerDetails = await User.findOne({ username: sellerUsername }).lean();
+      if (sellerDetails) {
+        match.seller = sellerDetails._id;
+      } else {
+        return res.send({ products: [], productCount: 0, productPrices: [] });
+      }
       break;
     default:
       break;
@@ -106,7 +113,7 @@ router.get('/products/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(SELLER_USERNAME_POPULATE).lean();
     if (!product) {
-      return res.status(404).send({ message: 'Product not found' });
+      return res.status(404).send({ message: 'Product with given ID does not exist' });
     }
     const correctProduct = getCorrectProduct(product, true);
     res.send({ product: correctProduct });
@@ -116,26 +123,28 @@ router.get('/products/:id', async (req, res) => {
 });
 
 router.patch('/products/:id', auth, async (req, res) => {
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-
-  if (!isValidOperation) {
-    return res.status(400).send({ message: `You can't change these data!` });
-  }
-
   try {
+    const updateKeys = Object.keys(req.body.data);
+    const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
+    const isValidOperation = updateKeys.every((update) => allowedUpdates.includes(update));
+
+    if (!isValidOperation) {
+      return res.status(400).send({ message: `You can't change these data!` });
+    }
+
     const product = await Product.findOne({
       _id: req.params.id,
       seller: req.user._id,
     }).populate(SELLER_USERNAME_POPULATE);
 
     if (!product) {
-      return res.status(404).send({ message: 'Product which you try to update does not exist' });
+      return res.status(404).send({
+        message: 'Product which you try to update does not exist or you are not a seller',
+      });
     }
 
-    updates.forEach((update) => {
-      product[update] = req.body[update];
+    updateKeys.forEach((updateKey) => {
+      product[updateKey] = req.body.data[updateKey];
     });
     await product.save();
 
@@ -146,20 +155,22 @@ router.patch('/products/:id', auth, async (req, res) => {
 
     res.send({ product: correctProduct });
   } catch (err) {
-    res.status(400).send(err);
+    res.status(500).send(err);
   }
 });
 
 router.delete('/products/:id', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id });
+    const product = await Product.findById(req.params.id);
+
     if (!product) {
-      return res.status(404).send({ message: 'This product does not exist' });
+      return res.status(404).send({ message: 'Product with given ID does not exist' });
     }
     if (!product.seller.equals(req.user._id) && !req.user.isAdmin) {
-      return res.status(403).send({ message: `You don't have permission to do this!` });
+      return res.status(403).send({ message: 'You are not allowed to do this' });
     }
-    product.deleteOne();
+
+    await product.deleteOne();
     res.send();
   } catch (err) {
     res.status(500).send(err);
@@ -187,10 +198,10 @@ router.post(
       const product = await Product.findById(req.params.id);
 
       if (!product) {
-        return res.status(404).send({ message: 'Given product does not exist' });
+        return res.status(404).send({ message: 'Product with given ID does not exist' });
       }
       if (!product.seller.equals(req.user._id)) {
-        return res.status(403).send({ message: 'You are not allowed to update this product' });
+        return res.status(403).send({ message: 'You are not allowed to do this' });
       }
 
       const buffer = await sharp(req.file.buffer).resize({ height: 500 }).jpeg().toBuffer();
@@ -202,20 +213,25 @@ router.post(
       await product.save();
       res.send();
     } catch (err) {
-      res.status(400).send(err);
+      res.status(500).send(err);
     }
   },
   (err, req, res) => {
-    res.status(400).send(err);
+    res.status(500).send(err);
   },
 );
 
-router.get('/products/:id/photo', async (req, res) => {
+router.get('/products/:id/photo', photoLimiter, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
+
     if (!product) {
-      return res.status(404).send();
+      return res.status(404).send({ message: 'Product with given ID does not exist' });
     }
+    if (!product.photo) {
+      return res.status(404).send({ message: 'Product with given ID does not have any photo' });
+    }
+
     res.set('Content-Type', 'image/jpeg');
     res.send(product.photo);
   } catch (err) {
@@ -225,15 +241,18 @@ router.get('/products/:id/photo', async (req, res) => {
 
 router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id }).populate(
-      SELLER_USERNAME_POPULATE,
-    );
-    if (!product || !product.photo) {
-      return res.status(404).send();
+    const product = await Product.findById(req.params.id).populate(SELLER_USERNAME_POPULATE);
+
+    if (!product) {
+      return res.status(404).send({ message: 'Product with given ID does not exist' });
     }
-    if (product.seller.username !== req.user.username && req.user.role !== 'admin') {
-      return res.status(403).send();
+    if (!product.photo) {
+      return res.status(404).send({ message: 'This product does not have any photo to delete' });
     }
+    if (product.seller.username !== req.user.username && !req.user.isAdmin) {
+      return res.status(403).send({ message: 'You are not allowed to do this' });
+    }
+
     product.photo = undefined;
     product.save();
     res.send();
