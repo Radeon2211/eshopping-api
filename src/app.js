@@ -12,8 +12,6 @@ const orderRouter = require('./routers/orderRouter');
 
 const app = express();
 
-app.enable('trust proxy');
-
 app.use(
   cors({
     origin: ['http://192.168.1.109:3000', 'https://radeon2211.github.io'],
