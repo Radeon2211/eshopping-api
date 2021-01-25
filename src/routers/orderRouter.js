@@ -1,8 +1,8 @@
 const express = require('express');
 const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
-const auth = require('../middleware/auth');
-const photoLimiter = require('../middleware/photoLimiter');
+const auth = require('../middlewares/auth');
+const { photoLimiter } = require('../middlewares/limiters');
 const {
   orderTypes,
   SELLER_USERNAME_POPULATE,

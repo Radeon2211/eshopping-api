@@ -53,9 +53,7 @@ describe('PATCH /transaction', () => {
         .patch(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 40,
-          },
+          quantity: 40,
         })
         .expect(200);
 
@@ -152,9 +150,7 @@ describe('PATCH /transaction', () => {
         .patch(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 40,
-          },
+          quantity: 40,
         })
         .expect(200);
 

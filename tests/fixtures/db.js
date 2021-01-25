@@ -15,6 +15,9 @@ const productFourId = new mongoose.Types.ObjectId();
 const userOneId = new mongoose.Types.ObjectId();
 const userTwoId = new mongoose.Types.ObjectId();
 const userThreeId = new mongoose.Types.ObjectId();
+const userOneTokenId = new mongoose.Types.ObjectId();
+const userTwoTokenId = new mongoose.Types.ObjectId();
+const userThreeTokenId = new mongoose.Types.ObjectId();
 const orderOneId = new mongoose.Types.ObjectId();
 const orderTwoId = new mongoose.Types.ObjectId();
 const orderThreeId = new mongoose.Types.ObjectId();
@@ -24,7 +27,7 @@ const userOne = {
   firstName: 'Krzysztof',
   lastName: 'Kononowicz',
   username: 'Konon',
-  email: 'user1@wp.pl',
+  email: 'user1@domain.com',
   password: 'Pa$$w0rd',
   street: 'Szkolna 17',
   zipCode: '15-950',
@@ -46,6 +49,7 @@ const userOne = {
   ],
   tokens: [
     {
+      _id: userOneTokenId,
       token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET),
     },
   ],
@@ -56,7 +60,7 @@ const userTwo = {
   firstName: 'Wojciech',
   lastName: 'Suchodolski',
   username: 'Major',
-  email: 'user2@wp.pl',
+  email: 'user2@domain.com',
   password: 'Pa$$w0rd',
   street: 'Szkolna 17',
   zipCode: '15-950',
@@ -73,6 +77,7 @@ const userTwo = {
   ],
   tokens: [
     {
+      _id: userTwoTokenId,
       token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET),
     },
   ],
@@ -83,7 +88,7 @@ const userThree = {
   firstName: 'Jarosław',
   lastName: 'Andrzejewski',
   username: 'mexicano',
-  email: 'user3@wp.pl',
+  email: 'user3@domain.com',
   password: 'Pa$$w0rd',
   street: 'Szkolna 17',
   zipCode: '15-950',
@@ -101,6 +106,7 @@ const userThree = {
   ],
   tokens: [
     {
+      _id: userThreeTokenId,
       token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
     },
   ],

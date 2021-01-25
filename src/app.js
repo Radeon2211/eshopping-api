@@ -1,6 +1,5 @@
 const express = require('express');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const parameterPollution = require('hpp');
 const cors = require('cors');
 const csrf = require('csurf');
@@ -9,6 +8,7 @@ require('./db/mongoose');
 const userRouter = require('./routers/userRouter');
 const productRouter = require('./routers/productRouter');
 const orderRouter = require('./routers/orderRouter');
+const { unlessPhotoLimiter } = require('./middlewares/limiters');
 
 const app = express();
 
@@ -19,24 +19,9 @@ app.use(
   }),
 );
 
-const limiter = rateLimit({
-  windowMs: 30 * 1000,
-  max: 30,
-  message: {
-    message: 'Too many requests, please wait 30 seconds',
-  },
-});
-
 app.use(parameterPollution());
 
-const unlessPhoto = (middleware) => (req, res, next) => {
-  if (req.path.includes('/photo')) {
-    return next();
-  }
-  return middleware(req, res, next);
-};
-
-app.use(unlessPhoto(limiter));
+app.use(unlessPhotoLimiter);
 
 app.use(helmet());
 app.use(helmet.hidePoweredBy());

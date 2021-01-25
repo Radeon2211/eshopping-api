@@ -115,10 +115,9 @@ describe('GET /cart', () => {
       .patch(`/products/${productFour._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({
-        data: {
-          quantity: 40,
-        },
-      });
+        quantity: 40,
+      })
+      .expect(200);
 
     const { body } = await request(app)
       .get('/cart')
@@ -345,7 +344,8 @@ describe('PATCH /cart/add', () => {
       await request(app)
         .patch('/cart/add')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .send({ quantity: 1, product: productId });
+        .send({ quantity: 1, product: productId })
+        .expect(200);
     }
 
     const { body } = await request(app)

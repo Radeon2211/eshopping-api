@@ -6,9 +6,9 @@ const imagemin = require('imagemin');
 const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const User = require('../models/userModel');
-const auth = require('../middleware/auth');
-const getCurrentUser = require('../middleware/getCurrentUser');
-const photoLimiter = require('../middleware/photoLimiter');
+const auth = require('../middlewares/auth');
+const getCurrentUser = require('../middlewares/getCurrentUser');
+const { photoLimiter } = require('../middlewares/limiters');
 const { createSortObject, getCorrectProduct } = require('../shared/utility');
 const { pages, SELLER_USERNAME_POPULATE } = require('../shared/constants');
 
@@ -17,7 +17,7 @@ const router = new express.Router();
 router.post('/products', auth, async (req, res) => {
   try {
     const product = new Product({
-      ...req.body.data,
+      ...req.body,
       seller: req.user._id,
       quantitySold: 0,
       buyerQuantity: 0,
@@ -30,48 +30,50 @@ router.post('/products', auth, async (req, res) => {
 });
 
 router.get('/products', getCurrentUser, async (req, res) => {
-  const match = {};
-  const { page, seller: sellerUsername } = req.query;
-
-  switch (page) {
-    case pages.ALL_PRODUCTS:
-      if (req.user) {
-        match.seller = {
-          $ne: mongoose.Types.ObjectId(req.user._id),
-        };
-      }
-      break;
-    case pages.MY_PRODUCTS:
-      if (req.user) {
-        match.seller = req.user._id;
-      }
-      break;
-    case pages.USER_PRODUCTS:
-      const sellerDetails = await User.findOne({ username: sellerUsername }).lean();
-      if (sellerDetails) {
-        match.seller = sellerDetails._id;
-      } else {
-        return res.send({ products: [], productCount: 0, productPrices: [] });
-      }
-      break;
-    default:
-      break;
-  }
-
-  if (req.query.condition) {
-    const conditionArray = req.query.condition.split(',');
-    match.condition = new RegExp(conditionArray.toString().replace(/,/g, '|'), 'gi');
-  }
-  if (req.query.name) {
-    match.name = new RegExp(req.query.name, 'gi');
-  }
-  match.price = {
-    $gte: req.query.minPrice || 0,
-    $lte: req.query.maxPrice || Infinity,
-  };
-  const sort = createSortObject(req);
-
   try {
+    const match = {};
+    const { page, seller: sellerUsername } = req.query;
+
+    switch (page) {
+      case pages.ALL_PRODUCTS:
+        if (req.user) {
+          match.seller = {
+            $ne: mongoose.Types.ObjectId(req.user._id),
+          };
+        }
+        break;
+      case pages.MY_PRODUCTS:
+        if (req.user) {
+          match.seller = req.user._id;
+        }
+        break;
+      case pages.USER_PRODUCTS:
+        const sellerDetails = await User.findOne({ username: sellerUsername }).lean();
+        if (sellerDetails) {
+          match.seller = sellerDetails._id;
+        } else {
+          return res.send({ products: [], productCount: 0, productPrices: [] });
+        }
+        break;
+      default:
+        break;
+    }
+
+    if (req.query.condition) {
+      const conditionArray = req.query.condition.split(',');
+      // eslint-disable-next-line security/detect-non-literal-regexp
+      match.condition = new RegExp(conditionArray.toString().replace(/,/g, '|'), 'gi');
+    }
+    if (req.query.name) {
+      // eslint-disable-next-line security/detect-non-literal-regexp
+      match.name = new RegExp(req.query.name, 'gi');
+    }
+    match.price = {
+      $gte: req.query.minPrice || 0,
+      $lte: req.query.maxPrice || Infinity,
+    };
+    const sort = createSortObject(req);
+
     const limit = +req.query.limit || 10;
     const products = await Product.find(match, null, {
       limit,
@@ -124,7 +126,7 @@ router.get('/products/:id', async (req, res) => {
 
 router.patch('/products/:id', auth, async (req, res) => {
   try {
-    const updateKeys = Object.keys(req.body.data);
+    const updateKeys = Object.keys(req.body);
     const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
     const isValidOperation = updateKeys.every((update) => allowedUpdates.includes(update));
 
@@ -144,7 +146,8 @@ router.patch('/products/:id', auth, async (req, res) => {
     }
 
     updateKeys.forEach((updateKey) => {
-      product[updateKey] = req.body.data[updateKey];
+      // eslint-disable-next-line security/detect-object-injection
+      product[updateKey] = req.body[updateKey];
     });
     await product.save();
 

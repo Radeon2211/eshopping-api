@@ -415,10 +415,9 @@ describe('POST /orders', () => {
       .patch(`/products/${productTwo._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .send({
-        data: {
-          quantity: 1,
-        },
-      });
+        quantity: 1,
+      })
+      .expect(200);
 
     const {
       body: { transaction },
@@ -469,7 +468,8 @@ describe('POST /orders', () => {
   test('Should NOT create order and get empty transaction', async () => {
     await request(app)
       .delete(`/products/${productTwo._id}`)
-      .set('Cookie', [`token=${userTwo.tokens[0].token}`]);
+      .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+      .expect(200);
 
     const { body } = await request(app)
       .post('/orders')

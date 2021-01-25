@@ -104,14 +104,16 @@ userSchema.methods.checkCurrentCredentials = async function (updates, data) {
   if (!data.currentPassword) {
     throw new MyError('You must provide current password');
   }
-  if (data.email === user.email) {
-    throw new MyError('New email is the same as current email');
-  }
   const isPasswordCorrect = await bcrypt.compare(data.currentPassword, user.password);
   if (!isPasswordCorrect) {
     throw new MyError('Current password is incorrect');
   }
-  if (data.password) {
+  if (updates.includes('email')) {
+    if (data.email === user.email) {
+      throw new MyError('New email is the same as current email');
+    }
+  }
+  if (updates.includes('password')) {
     const isPasswordTheSame = await bcrypt.compare(data.password, user.password);
     if (isPasswordTheSame) {
       throw new MyError('New password is the same as current password');
@@ -147,14 +149,15 @@ userSchema.methods.generateAuthToken = async function () {
 userSchema.statics.findByCredentials = async (email, password) => {
   // eslint-disable-next-line no-use-before-define
   const user = await User.findOne({ email });
-  if (!user) {
-    throw new MyError('You entered incorrect credentials');
+  let passwordToCompare = '';
+  if (user) {
+    passwordToCompare = user.password;
   }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new MyError('You entered incorrect credentials');
+  const isPasswordCorrect = await bcrypt.compare(password, passwordToCompare);
+  if (user && isPasswordCorrect) {
+    return user;
   }
-  return user;
+  throw new MyError('You entered incorrect credentials');
 };
 
 userSchema.pre('save', async function (next) {

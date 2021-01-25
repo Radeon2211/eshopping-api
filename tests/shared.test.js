@@ -53,7 +53,7 @@ describe('Constants', () => {
       await new Order(orderOne).save();
 
       await request(app)
-        .delete(`/users/me`)
+        .delete('/users/me')
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({ currentPassword: userTwo.password })
         .expect(200);
@@ -77,7 +77,7 @@ describe('Constants', () => {
       await new Order(orderOne).save();
 
       await request(app)
-        .delete(`/users/me`)
+        .delete('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({ currentPassword: userOne.password })
         .expect(200);
@@ -103,7 +103,7 @@ describe('Constants', () => {
       await new Order(orderOne).save();
 
       await request(app)
-        .delete(`/users/me`)
+        .delete('/users/me')
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({ currentPassword: userTwo.password })
         .expect(200);
@@ -344,9 +344,7 @@ describe('Utility', () => {
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 1,
-          },
+          quantity: 1,
         })
         .expect(200);
 
@@ -405,9 +403,7 @@ describe('Utility', () => {
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 1,
-          },
+          quantity: 1,
         })
         .expect(200);
 
@@ -444,9 +440,7 @@ describe('Utility', () => {
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 1,
-          },
+          quantity: 1,
         })
         .expect(200);
 
@@ -554,9 +548,7 @@ describe('Utility', () => {
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 1,
-          },
+          quantity: 1,
         })
         .expect(200);
 
@@ -737,10 +729,9 @@ describe('Utility', () => {
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
         .send({
-          data: {
-            quantity: 1,
-          },
-        });
+          quantity: 1,
+        })
+        .expect(200);
 
       const transactionToVerify = [
         {

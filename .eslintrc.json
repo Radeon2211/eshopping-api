@@ -7,10 +7,13 @@
     },
     "extends": [
         "airbnb-base",
-        "prettier"
+        "prettier",
+        "plugin:security/recommended",
+        "plugin:node/recommended"
     ],
     "plugins": [
-        "prettier"
+        "prettier",
+        "security"
     ],
     "parserOptions": {
         "ecmaVersion": 12
@@ -31,5 +34,11 @@
         "no-restricted-syntax": ["error", "ForInStatement", "LabeledStatement", "WithStatement"],
         "no-case-declarations": "off",
         "func-names": "off"
-    }
+    },
+    "overrides": [{
+        "files": ["*test.js"],
+        "rules": {
+            "node/no-unpublished-require": "off"
+        }
+    }]
 }

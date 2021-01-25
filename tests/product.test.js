@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { Binary } = require('mongodb');
@@ -39,7 +40,7 @@ describe('POST /products', () => {
     } = await request(app)
       .post('/products')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .send({ data })
+      .send(data)
       .expect(201);
 
     const product = await Product.findById(productId).lean();
@@ -67,7 +68,7 @@ describe('POST /products', () => {
       condition: 'not_applicable',
     };
 
-    await request(app).post('/products').send({ data }).expect(401);
+    await request(app).post('/products').send(data).expect(401);
 
     const product = await Product.findById(newProductId).lean();
     expect(product).toBeNull();
@@ -578,7 +579,7 @@ describe('PATCH /products/:id', () => {
     } = await request(app)
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .send({ data })
+      .send(data)
       .expect(200);
 
     expect(product).toEqual({
@@ -604,9 +605,7 @@ describe('PATCH /products/:id', () => {
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .send({
-        data: {
-          name: 'Cool mushrooms',
-        },
+        name: 'Cool mushrooms',
       })
       .expect(404);
 
@@ -622,9 +621,7 @@ describe('PATCH /products/:id', () => {
     await request(app)
       .patch(`/products/${productOne._id}`)
       .send({
-        data: {
-          name: 'Cool mushrooms',
-        },
+        name: 'Cool mushrooms',
       })
       .expect(401);
 
@@ -639,9 +636,7 @@ describe('PATCH /products/:id', () => {
       .patch(`/products/${incorrectId}`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({
-        data: {
-          name: 'Cool mushrooms',
-        },
+        name: 'Cool mushrooms',
       })
       .expect(404);
 
@@ -655,9 +650,7 @@ describe('PATCH /products/:id', () => {
       .patch(`/products/incorrectId`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({
-        data: {
-          name: 'Cool mushrooms',
-        },
+        name: 'Cool mushrooms',
       })
       .expect(500);
 
@@ -669,9 +662,7 @@ describe('PATCH /products/:id', () => {
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({
-        data: {
-          seller: userTwo._id,
-        },
+        seller: userTwo._id,
       })
       .expect(400);
 

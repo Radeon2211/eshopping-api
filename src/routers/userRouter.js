@@ -1,17 +1,19 @@
 const express = require('express');
 const { ObjectID } = require('mongodb');
 const { ObjectId } = require('mongoose').Types.ObjectId;
-const User = require('../models/userModel');
-const auth = require('../middleware/auth');
-
-const router = new express.Router();
 const { updateCartActions, MAX_CART_ITEMS_NUMBER } = require('../shared/constants');
 const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
+const auth = require('../middlewares/auth');
+const { loginLimiter } = require('../middlewares/limiters');
+const User = require('../models/userModel');
 const Product = require('../models/productModel');
 
+const router = new express.Router();
+
 router.post('/users', async (req, res) => {
-  const user = new User(req.body.data);
+  let user = null;
   try {
+    user = new User(req.body);
     await user.save();
     const token = await user.generateAuthToken();
     res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
@@ -24,9 +26,9 @@ router.post('/users', async (req, res) => {
   }
 });
 
-router.post('/users/login', async (req, res) => {
+router.post('/users/login', loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body.data;
+    const { email, password } = req.body;
     const user = await User.findByCredentials(email, password);
     const isCartDifferent = await updateUserCart(user, user.cart);
     const fullUser = await getFullUser(user._id);
@@ -72,20 +74,20 @@ router.get('/users/:username', async (req, res) => {
 });
 
 router.patch('/users/me', auth, async (req, res) => {
-  let updates = Object.keys(req.body);
-  const allowedUpdates = [
-    'email',
-    'password',
-    'firstName',
-    'lastName',
-    'street',
-    'zipCode',
-    'country',
-    'city',
-    'phone',
-    'contacts',
-  ];
   try {
+    let updates = Object.keys(req.body);
+    const allowedUpdates = [
+      'email',
+      'password',
+      'firstName',
+      'lastName',
+      'street',
+      'zipCode',
+      'country',
+      'city',
+      'phone',
+      'contacts',
+    ];
     if (updates.includes('email') || updates.includes('password')) {
       updates = await req.user.checkCurrentCredentials(updates, req.body);
     }
@@ -94,20 +96,24 @@ router.patch('/users/me', auth, async (req, res) => {
       return res.status(400).send({ message: `You can't change these data` });
     }
     updates.forEach((update) => {
+      // eslint-disable-next-line security/detect-object-injection
       req.user[update] = req.body[update];
     });
     await updateUserCart(req.user, req.user.cart);
     const user = await getFullUser(req.user._id);
     res.send({ user });
   } catch (err) {
-    res.status(400).send(err);
+    if (err.message) {
+      return res.status(400).send(err);
+    }
+    res.status(500).send(err);
   }
 });
 
 router.patch('/users/add-admin', auth, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
-      return res.status(403).send({ message: `You are not an admin and you can't do that` });
+      return res.status(403).send({ message: 'You are not allowed to do that' });
     }
     const user = await User.findOne({ email: req.body.email });
     user.isAdmin = true;
@@ -121,7 +127,7 @@ router.patch('/users/add-admin', auth, async (req, res) => {
 router.patch('/users/remove-admin', auth, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
-      return res.status(403).send({ message: `You are not an admin and you can't do that` });
+      return res.status(403).send({ message: 'You are not allowed to do that' });
     }
     const user = await User.findOne({ email: req.body.email });
     user.isAdmin = undefined;
@@ -139,8 +145,7 @@ router.delete('/users/me', auth, async (req, res) => {
     res.send();
   } catch (err) {
     if (err.message) {
-      res.status(400).send(err);
-      return;
+      return res.status(400).send(err);
     }
     res.status(500).send(err);
   }
