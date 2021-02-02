@@ -17,9 +17,9 @@ router.post('/users', async (req, res) => {
       ...req.body,
       cart: [],
       tokens: [],
+      isAdmin: undefined,
       createdAt: undefined,
       updatedAt: undefined,
-      isAdmin: undefined,
     });
     await user.save();
     const token = await user.generateAuthToken();
