@@ -29,7 +29,10 @@ describe('POST /users', () => {
       city: 'Białystok',
       country: 'Poland',
       phone: '123459876',
-      contacts: ['email'],
+      contacts: {
+        email: true,
+        phone: false,
+      },
     };
 
     const {
@@ -57,12 +60,73 @@ describe('POST /users', () => {
       country: 'Poland',
       phone: '123459876',
       cart: [],
-      contacts: ['email'],
+      contacts: {
+        email: true,
+        phone: false,
+      },
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });
     expect(user.createdAt).toBeDefined();
     expect(user.updatedAt).toBeDefined();
+  });
+
+  test('Should signup a new user without isAdmin, empty cart, 1 token, createdAt and updatedAt with current time', async () => {
+    const data = {
+      firstName: 'John',
+      lastName: 'Smith',
+      username: 'jsmith',
+      email: 'jsmith@domain.com',
+      password: 'Pa$$w0rd',
+      street: 'Szkolna 17',
+      zipCode: '15-950',
+      city: 'Białystok',
+      country: 'Poland',
+      phone: '123459876',
+      isAdmin: true,
+      cart: userOne.cart,
+      tokens: userOne.tokens,
+      createdAt: '2020-11-11T11:11:11.911Z',
+      updatedAt: '2020-11-11T11:11:11.911Z',
+      contacts: {
+        email: true,
+        phone: false,
+      },
+    };
+
+    const {
+      body: { user },
+    } = await request(app).post('/users').send(data).expect(201);
+
+    const newUser = await User.findById(user._id).lean();
+
+    expect(newUser.tokens).toHaveLength(1);
+
+    expect(user).toEqual({
+      ...data,
+      password: undefined,
+      _id: newUser._id.toJSON(),
+      firstName: 'John',
+      lastName: 'Smith',
+      username: 'jsmith',
+      email: 'jsmith@domain.com',
+      street: 'Szkolna 17',
+      zipCode: '15-950',
+      city: 'Białystok',
+      country: 'Poland',
+      phone: '123459876',
+      isAdmin: undefined,
+      tokens: undefined,
+      cart: [],
+      contacts: {
+        email: true,
+        phone: false,
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+    expect(user.createdAt).not.toEqual('2020-11-11T11:11:11.911Z');
+    expect(user.updatedAt).not.toEqual('2020-11-11T11:11:11.911Z');
   });
 
   test('Should NOT signup user with invalid username', async () => {
@@ -72,13 +136,17 @@ describe('POST /users', () => {
         firstName: 'John',
         lastName: 'Smith',
         username: 'j',
-        email: 'johnsmith@domain.com',
+        email: 'jsmith@domain.com',
         password: 'Pa$$w0rd',
         street: 'Szkolna 17',
         zipCode: '15-950',
         city: 'Białystok',
         country: 'Poland',
         phone: '123459876',
+        contacts: {
+          email: true,
+          phone: false,
+        },
       })
       .expect(400);
   });
@@ -97,6 +165,10 @@ describe('POST /users', () => {
         city: 'Białystok',
         country: 'Poland',
         phone: '123459876',
+        contacts: {
+          email: true,
+          phone: false,
+        },
       })
       .expect(400);
   });
@@ -108,13 +180,56 @@ describe('POST /users', () => {
         firstName: 'John',
         lastName: 'Smith',
         username: 'johnsmith',
-        email: 'johnsmith@domain.com',
+        email: 'jsmith@domain.com',
         password: 'pass',
         street: 'Szkolna 17',
         zipCode: '15-950',
         city: 'Białystok',
         country: 'Poland',
         phone: '123459876',
+        contacts: {
+          email: true,
+          phone: false,
+        },
+      })
+      .expect(400);
+  });
+
+  test('Should NOT signup user without contacts', async () => {
+    await request(app)
+      .post('/users')
+      .send({
+        firstName: 'John',
+        lastName: 'Smith',
+        username: 'johnsmith',
+        email: 'jsmith@domain.com',
+        password: 'pass',
+        street: 'Szkolna 17',
+        zipCode: '15-950',
+        city: 'Białystok',
+        country: 'Poland',
+        phone: '123459876',
+      })
+      .expect(400);
+  });
+
+  test('Should NOT signup user with incomplete contacts', async () => {
+    await request(app)
+      .post('/users')
+      .send({
+        firstName: 'John',
+        lastName: 'Smith',
+        username: 'johnsmith',
+        email: 'jsmith@domain.com',
+        password: 'pass',
+        street: 'Szkolna 17',
+        zipCode: '15-950',
+        city: 'Białystok',
+        country: 'Poland',
+        phone: '123459876',
+        contacts: {
+          email: true,
+        },
       })
       .expect(400);
   });
@@ -135,7 +250,7 @@ describe('POST /users/login', () => {
     const {
       body: { user: fullUser },
     } = await request(app)
-      .get(`/users/me`)
+      .get('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(200);
 
@@ -165,7 +280,7 @@ describe('POST /users/login', () => {
     const {
       body: { user: fullUser },
     } = await request(app)
-      .get(`/users/me`)
+      .get('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(200);
 
@@ -342,7 +457,10 @@ describe('PATCH /users/me', () => {
         zipCode: '77-777',
         city: 'city',
         country: 'country',
-        contacts: ['email', 'phone'],
+        contacts: {
+          email: false,
+          phone: true,
+        },
         email: 'newemail@domain.com',
         password: 'newPassword',
         currentPassword: userOne.password,

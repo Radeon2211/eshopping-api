@@ -34,7 +34,10 @@ const userOne = {
   city: 'Białystok',
   country: 'Poland',
   phone: '123456789',
-  contacts: ['email', 'phone'],
+  contacts: {
+    email: true,
+    phone: true,
+  },
   cart: [
     {
       _id: cartItemTwoId,
@@ -67,7 +70,10 @@ const userTwo = {
   city: 'Białystok',
   country: 'Poland',
   phone: '987654321',
-  contacts: [],
+  contacts: {
+    email: false,
+    phone: false,
+  },
   cart: [
     {
       _id: cartItemOneId,
@@ -95,7 +101,10 @@ const userThree = {
   city: 'Białystok',
   country: 'Poland',
   phone: '123456789',
-  contacts: ['email', 'phone'],
+  contacts: {
+    email: true,
+    phone: true,
+  },
   isAdmin: true,
   cart: [
     {

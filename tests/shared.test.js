@@ -1,4 +1,5 @@
 const request = require('supertest');
+const mongoose = require('mongoose');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
 const Order = require('../src/models/orderModel');
@@ -219,7 +220,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should get product with boolean photo true with seller username when second argument is true', async () => {
+    test('Should get product with boolean photo true and seller username when second argument is true', async () => {
       await request(app)
         .post(`/products/${productOne._id}/photo`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -237,6 +238,27 @@ describe('Utility', () => {
         seller: {
           username: userOne.username,
         },
+      });
+    });
+
+    test('Should get product with boolean photo true and seller null when second argument is true and an owner does not exist', async () => {
+      await request(app)
+        .post(`/products/${productOne._id}/photo`)
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .attach('photo', 'tests/fixtures/mushrooms.jpg')
+        .expect(200);
+
+      await Product.updateOne({ _id: productOne._id }, { seller: new mongoose.Types.ObjectId() });
+
+      const product = await Product.findById(productOne._id)
+        .populate(SELLER_USERNAME_POPULATE)
+        .lean();
+      const correctProduct = getCorrectProduct(product, true);
+
+      expect(correctProduct).toEqual({
+        ...product,
+        photo: true,
+        seller: null,
       });
     });
   });

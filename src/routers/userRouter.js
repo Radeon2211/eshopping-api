@@ -1,6 +1,6 @@
 const express = require('express');
+const Joi = require('joi-oid');
 const { ObjectID } = require('mongodb');
-const { ObjectId } = require('mongoose').Types.ObjectId;
 const { updateCartActions, MAX_CART_ITEMS_NUMBER } = require('../shared/constants');
 const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
 const auth = require('../middlewares/auth');
@@ -13,7 +13,14 @@ const router = new express.Router();
 router.post('/users', async (req, res) => {
   let user = null;
   try {
-    user = new User(req.body);
+    user = new User({
+      ...req.body,
+      cart: [],
+      tokens: [],
+      isAdmin: undefined,
+      createdAt: undefined,
+      updatedAt: undefined,
+    });
     await user.save();
     const token = await user.generateAuthToken();
     res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
@@ -161,8 +168,20 @@ router.get('/cart', auth, async (req, res) => {
   }
 });
 
+const addToCartSchema = Joi.object({
+  quantity: Joi.number().integer().min(1).required().label('Quantity'),
+  product: Joi.objectId().required().label('Product'),
+})
+  .required()
+  .label('New item');
+
 router.patch('/cart/add', auth, async (req, res) => {
   try {
+    const { error } = addToCartSchema.validate(req.body);
+    if (error) {
+      return res.status(400).send({ message: error.details[0].message });
+    }
+
     const newItem = req.body;
     const productDetails = await Product.findById(newItem.product).lean();
     if (!productDetails) {
@@ -171,6 +190,7 @@ router.patch('/cart/add', auth, async (req, res) => {
     if (productDetails.seller.equals(req.user._id)) {
       return res.status(403).send({ message: `You can't add your own product to the cart!` });
     }
+
     let updatedCart = null;
     const givenProductInCart = req.user.cart.find(({ product }) =>
       product.equals(productDetails._id),
@@ -298,27 +318,21 @@ router.patch('/cart/clear', auth, async (req, res) => {
   }
 });
 
+const trasactionSchema = Joi.object({
+  quantity: Joi.number().integer().min(1).required().label('Quantity'),
+  product: Joi.objectId().required().label('Product'),
+})
+  .optional()
+  .label('Item');
+
 router.patch('/transaction', auth, async (req, res) => {
   try {
-    const { singleItem } = req.body;
-
-    if (singleItem) {
-      let throwError = false;
-      if (typeof singleItem === 'object' && singleItem !== null) {
-        if (
-          Object.keys(singleItem).length !== 2 ||
-          singleItem.quantity < 1 ||
-          !ObjectId.isValid(singleItem.product)
-        ) {
-          throwError = true;
-        }
-      } else {
-        throwError = true;
-      }
-      if (throwError) {
-        return res.status(400).send({ message: 'Passed item data are not valid' });
-      }
+    const { error } = trasactionSchema.validate(req.body.singleItem);
+    if (error) {
+      return res.status(400).send({ message: error.details[0].message });
     }
+
+    const { singleItem } = req.body;
 
     const items = singleItem ? [singleItem] : req.user.cart;
     const { transaction, isDifferent } = await verifyItemsToTransaction(

@@ -327,7 +327,7 @@ describe('PATCH /cart/add', () => {
     ]);
   });
 
-  test('Should NOT add item to cart if cart items number is 50 or higher', async () => {
+  test('Should get 403 if cart items number is 50 or higher', async () => {
     jest.setTimeout(15000);
     for (let i = 0; i < 48; i += 1) {
       const productId = new mongoose.Types.ObjectId();
@@ -359,7 +359,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test(`Should NOT add item to cart with user's product`, async () => {
+  test(`Should get 403 if user is an owner`, async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -371,7 +371,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should NOT add new item to cart if given productId does not exists in db', async () => {
+  test('Should get 404 if given productId does not exists in db', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -383,14 +383,52 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should NOT add new item to cart if given productId is not valid mongoose ObjectId', async () => {
+  test('Should get 400 if given quantity is lower than 1', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .send({ quantity: 1, product: 'invalidProductId' })
-      .expect(500);
+      .send({ quantity: 0, product: productTwo._id })
+      .expect(400);
 
-    expect(body.kind).toEqual('ObjectId');
+    expect(body).toEqual({
+      message: '"Quantity" must be greater than or equal to 1',
+    });
+  });
+
+  test('Should get 400 if given no quantity is given', async () => {
+    const { body } = await request(app)
+      .patch('/cart/add')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .send({ product: productTwo._id })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: '"Quantity" is required',
+    });
+  });
+
+  test('Should get 400 if no product is given', async () => {
+    const { body } = await request(app)
+      .patch('/cart/add')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .send({ quantity: 1 })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: '"Product" is required',
+    });
+  });
+
+  test('Should get 400 if no data are given', async () => {
+    const { body } = await request(app)
+      .patch('/cart/add')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .send({})
+      .expect(400);
+
+    expect(body).toEqual({
+      message: '"Quantity" is required',
+    });
   });
 
   test('Should get 401 if user in unauthenicated', async () => {

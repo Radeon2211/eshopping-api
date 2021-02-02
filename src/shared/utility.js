@@ -15,7 +15,7 @@ const createSortObject = (req) => {
 
 const getCorrectProduct = (product, getSeller = false) => {
   let { seller } = product;
-  if (getSeller) {
+  if (getSeller && product.seller) {
     seller = {
       username: product.seller.username,
     };

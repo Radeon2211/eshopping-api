@@ -218,7 +218,7 @@ describe('PATCH /transaction', () => {
         .expect(400);
 
       expect(body).toEqual({
-        message: 'Passed item data are not valid',
+        message: '"Quantity" must be greater than or equal to 1',
       });
     });
 
@@ -235,12 +235,12 @@ describe('PATCH /transaction', () => {
         .expect(400);
 
       expect(body).toEqual({
-        message: 'Passed item data are not valid',
+        message: 'It must have a valid ObjectId.',
       });
     });
 
-    test('Should get 400 if passed item is not an object', async () => {
-      const singleItem = 'notAnObject';
+    test('Should get 400 if passed item is an array', async () => {
+      const singleItem = ['array'];
 
       const { body } = await request(app)
         .patch('/transaction')
@@ -249,15 +249,27 @@ describe('PATCH /transaction', () => {
         .expect(400);
 
       expect(body).toEqual({
-        message: 'Passed item data are not valid',
+        message: '"Item" must be of type object',
       });
     });
 
-    test('Should get 400 if passed item has not 2 properties', async () => {
+    test('Should get 400 if passed item is a string', async () => {
+      const singleItem = 'string';
+
+      const { body } = await request(app)
+        .patch('/transaction')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({ singleItem })
+        .expect(400);
+
+      expect(body).toEqual({
+        message: '"Item" must be of type object',
+      });
+    });
+
+    test('Should get 400 if no quantity is given', async () => {
       const singleItem = {
         product: 'invalidId',
-        quantity: 1,
-        additionalProp: true,
       };
 
       const { body } = await request(app)
@@ -267,7 +279,23 @@ describe('PATCH /transaction', () => {
         .expect(400);
 
       expect(body).toEqual({
-        message: 'Passed item data are not valid',
+        message: '"Quantity" is required',
+      });
+    });
+
+    test('Should get 400 if no product is given', async () => {
+      const singleItem = {
+        quantity: 1,
+      };
+
+      const { body } = await request(app)
+        .patch('/transaction')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({ singleItem })
+        .expect(400);
+
+      expect(body).toEqual({
+        message: '"Product" is required',
       });
     });
   });

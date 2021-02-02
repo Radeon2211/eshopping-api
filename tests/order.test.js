@@ -774,7 +774,7 @@ describe('GET /orders/:id', () => {
     await new Order(orderOne).save();
 
     await request(app)
-      .delete(`/users/me`)
+      .delete('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ currentPassword: userOne.password })
       .expect(200);
@@ -809,7 +809,7 @@ describe('GET /orders/:id', () => {
     await new Order(orderOne).save();
 
     await request(app)
-      .delete(`/users/me`)
+      .delete('/users/me')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .send({ currentPassword: userTwo.password })
       .expect(200);

@@ -647,7 +647,7 @@ describe('PATCH /products/:id', () => {
 
   test('Should get 500 if passed id is not valid id (but not ObjectId)', async () => {
     const { body } = await request(app)
-      .patch(`/products/incorrectId`)
+      .patch('/products/incorrectId')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({
         name: 'Cool mushrooms',
@@ -834,7 +834,7 @@ describe('GET /products/:id/photo', () => {
 
   test('Should get 500 if given ID is not correct ObjectId', async () => {
     await request(app)
-      .get(`/products/incorrectId/photo`)
+      .get('/products/incorrectId/photo')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(500);
   });

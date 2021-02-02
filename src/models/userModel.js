@@ -37,11 +37,16 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     ...DELIVERY_ADDRESS,
-    contacts: [
-      {
-        type: String,
+    contacts: {
+      email: {
+        type: Boolean,
+        required: true,
       },
-    ],
+      phone: {
+        type: Boolean,
+        required: true,
+      },
+    },
     cart: [
       {
         quantity: {
@@ -86,10 +91,10 @@ userSchema.methods.toJSON = function () {
 userSchema.methods.getPublicProfile = function () {
   const { email, username, phone, contacts } = this;
   const extraInfo = {};
-  if (contacts.includes('email')) {
+  if (contacts.email) {
     extraInfo.email = email;
   }
-  if (contacts.includes('phone')) {
+  if (contacts.phone) {
     extraInfo.phone = phone;
   }
   const publicProfile = {
@@ -163,7 +168,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
 userSchema.pre('save', async function (next) {
   const user = this;
   if (user.isModified('password')) {
-    user.password = await bcrypt.hash(user.password, 8);
+    user.password = await bcrypt.hash(user.password, 12);
   }
   next();
 });

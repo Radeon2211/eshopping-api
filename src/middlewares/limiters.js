@@ -30,11 +30,12 @@ const photoLimiter = rateLimit({
 });
 
 const loginLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 10,
+  windowMs: 30 * 60 * 1000,
+  max: 7,
   message: {
-    message: 'Too many login attemps, please wait up to 5 minutes',
+    message: 'Too many failed login attemps, please wait up to 30 minutes',
   },
+  skipSuccessfulRequests: true,
 });
 
 module.exports = {
