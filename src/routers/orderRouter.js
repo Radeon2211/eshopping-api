@@ -166,11 +166,8 @@ router.get('/orders/:id/:productId/photo', photoLimiter, auth, async (req, res) 
 
     const product = order.products.find(({ _id }) => _id.equals(req.params.productId));
 
-    if (!product) {
-      return res.status(404).send({ message: 'This product does not exist in given order' });
-    }
-    if (!product.photo) {
-      return res.status(404).send({ message: 'This product does not have any photo' });
+    if (!product?.photo) {
+      return res.status(404).send({ message: 'Photo not found' });
     }
     if (!order.seller.equals(req.user._id) && !order.buyer.equals(req.user._id)) {
       return res.status(403).send({ message: 'You are not allowed to get this photo' });

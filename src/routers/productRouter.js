@@ -229,11 +229,8 @@ router.get('/products/:id/photo', photoLimiter, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
-    if (!product) {
-      return res.status(404).send({ message: 'Product with given ID does not exist' });
-    }
-    if (!product.photo) {
-      return res.status(404).send({ message: 'Product with given ID does not have any photo' });
+    if (!product?.photo) {
+      return res.status(404).send({ message: 'Photo not found' });
     }
 
     res.set('Content-Type', 'image/jpeg');
@@ -247,11 +244,8 @@ router.delete('/products/:id/photo', auth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(SELLER_USERNAME_POPULATE);
 
-    if (!product) {
-      return res.status(404).send({ message: 'Product with given ID does not exist' });
-    }
-    if (!product.photo) {
-      return res.status(404).send({ message: 'This product does not have any photo to delete' });
+    if (!product?.photo) {
+      return res.status(404).send({ message: 'Photo to delete not found' });
     }
     if (product.seller.username !== req.user.username && !req.user.isAdmin) {
       return res.status(403).send({ message: 'You are not allowed to do this' });

@@ -828,7 +828,7 @@ describe('GET /products/:id/photo', () => {
       .expect(404);
 
     expect(body).toEqual({
-      message: 'Product with given ID does not exist',
+      message: 'Photo not found',
     });
   });
 
@@ -846,7 +846,7 @@ describe('GET /products/:id/photo', () => {
       .expect(404);
 
     expect(body).toEqual({
-      message: 'Product with given ID does not have any photo',
+      message: 'Photo not found',
     });
   });
 });
@@ -911,7 +911,7 @@ describe('DELETE /products/:id/photo', () => {
     expect(product.photo).toBeInstanceOf(Binary);
 
     expect(body).toEqual({
-      message: 'Product with given ID does not exist',
+      message: 'Photo to delete not found',
     });
   });
 
@@ -925,6 +925,17 @@ describe('DELETE /products/:id/photo', () => {
 
     const product = await Product.findById(productOne._id).lean();
     expect(product.photo).toBeInstanceOf(Binary);
+  });
+
+  test('Should get 404 if product photo does not exist', async () => {
+    const { body } = await request(app)
+      .delete(`/products/${productOne._id}/photo`)
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .expect(404);
+
+    expect(body).toEqual({
+      message: 'Photo to delete not found',
+    });
   });
 
   test(`Should get 403 if user is trying to delete other user's product photo`, async () => {

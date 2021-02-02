@@ -953,7 +953,7 @@ describe('GET /orders/:id/:productId/photo', () => {
       .expect(404);
 
     expect(body).toEqual({
-      message: 'This product does not exist in given order',
+      message: 'Photo not found',
     });
   });
 
@@ -966,7 +966,7 @@ describe('GET /orders/:id/:productId/photo', () => {
       .expect(404);
 
     expect(body).toEqual({
-      message: 'This product does not have any photo',
+      message: 'Photo not found',
     });
   });
 
