@@ -123,6 +123,15 @@ router.patch('/users/add-admin', auth, async (req, res) => {
       return res.status(403).send({ message: 'You are not allowed to do that' });
     }
     const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).send({ message: 'User with given email does not exist' });
+    }
+    if (req.body.email === req.user.email) {
+      return res.status(400).send({ message: 'You are already an admin' });
+    }
+    if (user.isAdmin) {
+      return res.status(400).send({ message: 'This user is already an admin' });
+    }
     user.isAdmin = true;
     await user.save();
     res.send();
@@ -137,6 +146,14 @@ router.patch('/users/remove-admin', auth, async (req, res) => {
       return res.status(403).send({ message: 'You are not allowed to do that' });
     }
     const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).send({ message: 'User with given email does not exist' });
+    }
+    if (!user.isAdmin) {
+      return res
+        .status(400)
+        .send({ message: 'This user is not an admin so the action is not needed' });
+    }
     user.isAdmin = undefined;
     await user.save();
     res.send();

@@ -814,7 +814,7 @@ describe('PATCH /users/add-admin', () => {
     expect(user.isAdmin).toEqual(true);
   });
 
-  test('Should NOT non admin update other user to admin', async () => {
+  test('Should NOT non admin make other user admin', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -826,6 +826,48 @@ describe('PATCH /users/add-admin', () => {
 
     expect(body).toEqual({
       message: 'You are not allowed to do that',
+    });
+  });
+
+  test('Should get 404 if user with given email does not exist', async () => {
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: 'nonexisting@email.com' })
+      .expect(404);
+
+    expect(body).toEqual({
+      message: 'User with given email does not exist',
+    });
+  });
+
+  test('Should get 400 if user is trying to make himself an admin', async () => {
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: userThree.email })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'You are already an admin',
+    });
+  });
+
+  test('Should get 400 if user with given email is already an admin', async () => {
+    await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: userTwo.email })
+      .expect(200);
+
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userTwo.tokens[0].token}`])
+      .send({ email: userThree.email })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'This user is already an admin',
     });
   });
 
@@ -853,23 +895,41 @@ describe('PATCH /users/remove-admin', () => {
   });
 
   test('Should NOT non admin remove other admin', async () => {
-    await request(app)
-      .patch('/users/add-admin')
-      .set('Cookie', [`token=${userThree.tokens[0].token}`])
-      .send({ email: userOne.email })
-      .expect(200);
-
     const { body } = await request(app)
       .patch('/users/remove-admin')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-      .send({ email: userOne.email })
+      .send({ email: userThree.email })
       .expect(403);
 
-    const user = await User.findById(userOne._id).lean();
+    const user = await User.findById(userThree._id).lean();
     expect(user.isAdmin).toEqual(true);
 
     expect(body).toEqual({
       message: 'You are not allowed to do that',
+    });
+  });
+
+  test('Should get 404 if user with given email does not exist', async () => {
+    const { body } = await request(app)
+      .patch('/users/remove-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: 'nonexisting@email.com' })
+      .expect(404);
+
+    expect(body).toEqual({
+      message: 'User with given email does not exist',
+    });
+  });
+
+  test('Should get 400 if user with given email is already not an admin', async () => {
+    const { body } = await request(app)
+      .patch('/users/remove-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: userOne.email })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'This user is not an admin so the action is not needed',
     });
   });
 
