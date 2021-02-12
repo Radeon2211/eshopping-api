@@ -1,29 +1,58 @@
 const express = require('express');
 const Joi = require('joi-oid');
 const { ObjectID } = require('mongodb');
-const { updateCartActions, MAX_CART_ITEMS_NUMBER } = require('../shared/constants');
-const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
-const auth = require('../middlewares/auth');
-const { loginLimiter } = require('../middlewares/limiters');
+const generatePassword = require('generate-password');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
+const VerificationCode = require('../models/verificationCodeModel');
+const { authPending, authActive } = require('../middlewares/auth');
+const {
+  loginLimiter,
+  signupLimiter,
+  accountVerificationEmailLimiter,
+  verificationLinkLimiter,
+  resetPasswordRequestLimiter,
+} = require('../middlewares/limiters');
+const {
+  updateCartActions,
+  MAX_CART_ITEMS_NUMBER,
+  verificationCodeTypes,
+} = require('../shared/constants');
+const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
+const {
+  sendAccountVerificationEmail,
+  sendResetPasswordVerificationEmail,
+  sendNewPasswordEmail,
+} = require('../emails/account');
 
 const router = new express.Router();
 
-router.post('/users', async (req, res) => {
+router.post('/users', signupLimiter, async (req, res) => {
   let user = null;
   try {
     user = new User({
       ...req.body,
+      status: 'pending',
       cart: [],
       tokens: [],
       isAdmin: undefined,
       createdAt: undefined,
-      updatedAt: undefined,
     });
     await user.save();
+
+    const verificationLink = await user.generateVerificationCode(
+      verificationCodeTypes.ACCOUNT_VERIFICATION,
+    );
+    if (process.env.MODE !== 'testing') {
+      await sendAccountVerificationEmail(user.email, user.username, verificationLink);
+    }
+
     const token = await user.generateAuthToken();
-    res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
+    if (process.env.MODE === 'production') {
+      res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
+    } else {
+      res.cookie('token', token, { httpOnly: true });
+    }
     res.status(201).send({ user });
   } catch (err) {
     if (user) {
@@ -38,16 +67,22 @@ router.post('/users/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findByCredentials(email, password);
     const isCartDifferent = await updateUserCart(user, user.cart);
-    const fullUser = await getFullUser(user._id);
+
     const token = await user.generateAuthToken();
-    res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
+    if (process.env.MODE === 'production') {
+      res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
+    } else {
+      res.cookie('token', token, { httpOnly: true });
+    }
+
+    const fullUser = await getFullUser(user._id);
     res.send({ user: fullUser, isDifferent: isCartDifferent });
   } catch (err) {
     res.status(400).send(err);
   }
 });
 
-router.post('/users/logout', auth, async (req, res) => {
+router.post('/users/logout', authPending, async (req, res) => {
   try {
     req.user.tokens = req.user.tokens.filter(({ token }) => token !== req.token);
     await req.user.save();
@@ -57,7 +92,157 @@ router.post('/users/logout', auth, async (req, res) => {
   }
 });
 
-router.get('/users/me', auth, async (req, res) => {
+router.post(
+  '/users/send-account-verification-email',
+  accountVerificationEmailLimiter,
+  authPending,
+  async (req, res) => {
+    try {
+      if (req.user.status === 'active') {
+        return res.status(400).send({
+          message: 'Your account is already active',
+        });
+      }
+
+      const verificationLink = await req.user.generateVerificationCode(
+        verificationCodeTypes.ACCOUNT_VERIFICATION,
+      );
+      if (process.env.MODE !== 'testing') {
+        await sendAccountVerificationEmail(req.user.email, req.user.username, verificationLink);
+      }
+
+      res.send();
+    } catch (err) {
+      res.status(500).send();
+    }
+  },
+);
+
+router.get('/users/:id/verify-account/:code', verificationLinkLimiter, async (req, res) => {
+  try {
+    let isError = false;
+    const verificationCode = await VerificationCode.findOne({
+      code: req.params.code,
+      type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+    });
+    if (!verificationCode) {
+      isError = true;
+    }
+
+    let user = null;
+    if (!isError) {
+      user = await User.findOne({ email: verificationCode.email });
+      if (user) {
+        if (!user._id.equals(req.params.id)) {
+          isError = true;
+        }
+      } else {
+        isError = true;
+      }
+    }
+
+    if (isError) {
+      return res.status(400).send({
+        message:
+          'Verification link has been expired or you are not allowed to perform this action or your account already does not exist',
+      });
+    }
+
+    user.status = 'active';
+    await user.save();
+    await verificationCode.remove();
+
+    res.redirect(process.env.FRONTEND_URL);
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).send(err);
+    }
+    res.status(500).send(err);
+  }
+});
+
+const resetPasswordSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+router.post('/users/request-for-reset-password', resetPasswordRequestLimiter, async (req, res) => {
+  try {
+    const { error } = resetPasswordSchema.validate(req.body);
+    if (error) {
+      return res.status(400).send({ message: error.details[0].message });
+    }
+
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).send({ message: `We can't find any user with this email` });
+    }
+
+    const verificationLink = await user.generateVerificationCode(
+      verificationCodeTypes.RESET_PASSWORD,
+    );
+    if (process.env.MODE !== 'testing') {
+      await sendResetPasswordVerificationEmail(user.email, verificationLink);
+    }
+
+    res.send();
+  } catch (err) {
+    res.status(500).send();
+  }
+});
+
+router.get('/users/:id/reset-password/:code', verificationLinkLimiter, async (req, res) => {
+  try {
+    let isError = false;
+    const verificationCode = await VerificationCode.findOne({
+      code: req.params.code,
+      type: verificationCodeTypes.RESET_PASSWORD,
+    });
+    if (!verificationCode) {
+      isError = true;
+    }
+
+    let user = null;
+    if (!isError) {
+      user = await User.findOne({ email: verificationCode.email });
+      if (user) {
+        if (!user._id.equals(req.params.id)) {
+          isError = true;
+        }
+      } else {
+        isError = true;
+      }
+    }
+
+    if (isError) {
+      return res.status(400).send({
+        message:
+          'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+      });
+    }
+
+    const newPassword = generatePassword.generate({
+      length: 15,
+      numbers: true,
+    });
+    user.password = newPassword;
+
+    if (process.env.MODE !== 'testing') {
+      await sendNewPasswordEmail(user.email, newPassword);
+    }
+
+    await user.save();
+    await verificationCode.remove();
+
+    res.send({ message: 'New password has been sent successfully. Go back to your inbox' });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).send(err);
+    }
+    res.status(500).send(err);
+  }
+});
+
+router.get('/users/me', authPending, async (req, res) => {
   try {
     const isCartDifferent = await updateUserCart(req.user, req.user.cart);
     const user = await getFullUser(req.user._id);
@@ -80,7 +265,7 @@ router.get('/users/:username', async (req, res) => {
   }
 });
 
-router.patch('/users/me', auth, async (req, res) => {
+router.patch('/users/me', authActive, async (req, res) => {
   try {
     let updates = Object.keys(req.body);
     const allowedUpdates = [
@@ -117,7 +302,7 @@ router.patch('/users/me', auth, async (req, res) => {
   }
 });
 
-router.patch('/users/add-admin', auth, async (req, res) => {
+router.patch('/users/add-admin', authActive, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
       return res.status(403).send({ message: 'You are not allowed to do that' });
@@ -140,7 +325,7 @@ router.patch('/users/add-admin', auth, async (req, res) => {
   }
 });
 
-router.patch('/users/remove-admin', auth, async (req, res) => {
+router.patch('/users/remove-admin', authActive, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
       return res.status(403).send({ message: 'You are not allowed to do that' });
@@ -162,7 +347,7 @@ router.patch('/users/remove-admin', auth, async (req, res) => {
   }
 });
 
-router.delete('/users/me', auth, async (req, res) => {
+router.delete('/users/me', authPending, async (req, res) => {
   try {
     await req.user.checkCurrentPassword(req.body);
     await req.user.remove();
@@ -175,7 +360,7 @@ router.delete('/users/me', auth, async (req, res) => {
   }
 });
 
-router.get('/cart', auth, async (req, res) => {
+router.get('/cart', authActive, async (req, res) => {
   try {
     const isCartDifferent = await updateUserCart(req.user, req.user.cart);
     const user = await getFullUser(req.user._id);
@@ -192,7 +377,7 @@ const addToCartSchema = Joi.object({
   .required()
   .label('New item');
 
-router.patch('/cart/add', auth, async (req, res) => {
+router.patch('/cart/add', authActive, async (req, res) => {
   try {
     const { error } = addToCartSchema.validate(req.body);
     if (error) {
@@ -243,7 +428,7 @@ router.patch('/cart/add', auth, async (req, res) => {
   }
 });
 
-router.patch('/cart/:itemId/update', auth, async (req, res) => {
+router.patch('/cart/:itemId/update', authActive, async (req, res) => {
   try {
     const { action } = req.query;
     const givenQuantity = +req.query.quantity;
@@ -313,7 +498,7 @@ router.patch('/cart/:itemId/update', auth, async (req, res) => {
   }
 });
 
-router.patch('/cart/:itemId/remove', auth, async (req, res) => {
+router.patch('/cart/:itemId/remove', authActive, async (req, res) => {
   try {
     const { cart } = req.user;
     const updatedCart = cart.filter(({ _id }) => ObjectID(_id).toString() !== req.params.itemId);
@@ -325,7 +510,7 @@ router.patch('/cart/:itemId/remove', auth, async (req, res) => {
   }
 });
 
-router.patch('/cart/clear', auth, async (req, res) => {
+router.patch('/cart/clear', authActive, async (req, res) => {
   try {
     req.user.cart = [];
     await req.user.save();
@@ -342,7 +527,7 @@ const trasactionSchema = Joi.object({
   .optional()
   .label('Item');
 
-router.patch('/transaction', auth, async (req, res) => {
+router.patch('/transaction', authActive, async (req, res) => {
   try {
     const { error } = trasactionSchema.validate(req.body.singleItem);
     if (error) {

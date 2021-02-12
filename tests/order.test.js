@@ -9,6 +9,7 @@ const {
   userOne,
   userTwo,
   userThree,
+  userFour,
   orderOne,
   orderTwo,
   orderThree,
@@ -526,8 +527,8 @@ describe('POST /orders', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
-    await request(app)
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
       .post('/orders')
       .send({
         transaction: [
@@ -545,6 +546,38 @@ describe('POST /orders', () => {
         deliveryAddress: userOneDeliveryAddress,
       })
       .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const orders = await Order.find().lean();
+    expect(orders).toHaveLength(0);
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app)
+      .post('/orders')
+      .send({
+        transaction: [
+          {
+            _id: productOne._id,
+            name: productOne.name,
+            price: productOne.price,
+            quantity: 1,
+            photo: false,
+            seller: {
+              username: userOne.username,
+            },
+          },
+        ],
+        deliveryAddress: userOneDeliveryAddress,
+      })
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
 
     const orders = await Order.find().lean();
     expect(orders).toHaveLength(0);
@@ -732,8 +765,22 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(0);
   });
 
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .get(`/orders?type=${orderTypes.PLACED_ORDERS}`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
   test('Should get 401 if user is unauthenticated', async () => {
-    await request(app).get(`/orders?type=${orderTypes.PLACED_ORDERS}`).expect(401);
+    const { body } = await request(app).get(`/orders?type=${orderTypes.PLACED_ORDERS}`).expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -888,9 +935,26 @@ describe('GET /orders/:id', () => {
     });
   });
 
+  test('Should get 401 if user has status pending', async () => {
+    await new Order(orderOne).save();
+
+    const { body } = await request(app)
+      .get(`/orders/${orderOne._id}`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
   test('Should get 401 if user is unauthenticated', async () => {
     await new Order(orderOne).save();
-    await request(app).get(`/orders/${orderOne._id}`).expect(401);
+
+    const { body } = await request(app).get(`/orders/${orderOne._id}`).expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -1000,8 +1064,27 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
+  test('Should get 401 if user has status pending', async () => {
+    await new Order(orderOne).save();
+
+    const { body } = await request(app)
+      .get(`/orders/${orderOne._id}/${productTwo._id}/photo`)
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
   test('Should get 401 if user is unauthenticated', async () => {
     await new Order(orderOne).save();
-    await request(app).get(`/orders/${orderOne._id}/${productTwo._id}/photo`).expect(401);
+
+    const { body } = await request(app)
+      .get(`/orders/${orderOne._id}/${productTwo._id}/photo`)
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });

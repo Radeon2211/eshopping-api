@@ -7,11 +7,12 @@ const User = require('../src/models/userModel');
 const {
   userOne,
   userTwo,
+  userThree,
+  userFour,
   productOne,
   productTwo,
   productThree,
   productFour,
-  userThree,
   setupDatabase,
   cartItemOneId,
   cartItemTwoId,
@@ -129,8 +130,22 @@ describe('GET /cart', () => {
     expect(body.isDifferent).toEqual(true);
   });
 
-  test('Should get 401 if user in unauthenicated', async () => {
-    await request(app).get('/cart').expect(401);
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .get('/cart')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app).get('/cart').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -431,11 +446,27 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 401 if user in unauthenicated', async () => {
-    await request(app)
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch('/cart/add')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .send({ quantity: 1, product: productOne._id })
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app)
       .patch('/cart/add')
       .send({ quantity: 1, product: productOne._id })
       .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -727,10 +758,25 @@ describe('PATCH /cart/:itemId/update', () => {
     });
   });
 
-  test('Should get 401 if user in unauthenicated', async () => {
-    await request(app)
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch(`/cart/${cartItemTwoId}/update?action=${updateCartActions.INCREMENT}`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
+  test('Should get 401 if user in unauthenticated', async () => {
+    const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/update?action=${updateCartActions.INCREMENT}`)
       .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -786,8 +832,22 @@ describe('PATCH /cart/:itemId/remove', () => {
     expect(cart).toEqual([]);
   });
 
-  test('Should get 401 if user in unauthenicated', async () => {
-    await request(app).patch(`/cart/${cartItemTwoId}/remove`).expect(401);
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch(`/cart/${cartItemTwoId}/remove`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
+  test('Should get 401 if user in unauthenticated', async () => {
+    const { body } = await request(app).patch(`/cart/${cartItemTwoId}/remove`).expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -802,7 +862,21 @@ describe('PATCH /cart/clear', () => {
     expect(cart).toHaveLength(0);
   });
 
-  test('Should get 401 if user in unauthenicated', async () => {
-    await request(app).patch('/cart/clear').expect(401);
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch('/cart/clear')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
+  test('Should get 401 if user in unauthenticated', async () => {
+    const { body } = await request(app).patch('/cart/clear').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });

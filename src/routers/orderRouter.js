@@ -1,7 +1,7 @@
 const express = require('express');
 const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
-const auth = require('../middlewares/auth');
+const { authActive } = require('../middlewares/auth');
 const { photoLimiter } = require('../middlewares/limiters');
 const {
   orderTypes,
@@ -20,7 +20,7 @@ const {
 
 const router = new express.Router();
 
-router.post('/orders', auth, async (req, res) => {
+router.post('/orders', authActive, async (req, res) => {
   try {
     const { transaction, orderProducts, isDifferent, isBuyingOwnProducts } = await verifyItemsToBuy(
       req.body.transaction,
@@ -91,7 +91,7 @@ router.post('/orders', auth, async (req, res) => {
   }
 });
 
-router.get('/orders', auth, async (req, res) => {
+router.get('/orders', authActive, async (req, res) => {
   try {
     const sort = createSortObject(req);
 
@@ -120,7 +120,7 @@ router.get('/orders', auth, async (req, res) => {
   }
 });
 
-router.get('/orders/:id', auth, async (req, res) => {
+router.get('/orders/:id', authActive, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate(ORDER_SELLER_POPULATE)
@@ -156,7 +156,7 @@ router.get('/orders/:id', auth, async (req, res) => {
   }
 });
 
-router.get('/orders/:id/:productId/photo', photoLimiter, auth, async (req, res) => {
+router.get('/orders/:id/:productId/photo', photoLimiter, authActive, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
 

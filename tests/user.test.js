@@ -1,152 +1,132 @@
 const request = require('supertest');
+const mongoose = require('mongoose');
+const moment = require('moment');
 const bcrypt = require('bcrypt');
+const validateUUID = require('uuid-validate');
 const app = require('../src/app');
 const User = require('../src/models/userModel');
 const Product = require('../src/models/productModel');
+const VerificationCode = require('../src/models/verificationCodeModel');
 const {
   userOne,
   userTwo,
   userThree,
+  userFour,
   productOne,
   productTwo,
   productFour,
   setupDatabase,
 } = require('./fixtures/db');
 const { getFullUser } = require('../src/shared/utility');
+const { verificationCodeTypes } = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
 
-describe('POST /users', () => {
-  test('Should signup a new user', async () => {
-    const data = {
-      firstName: 'John',
-      lastName: 'Smith',
-      username: 'jsmith',
-      email: 'jsmith@domain.com',
-      password: 'Pa$$w0rd',
-      street: 'Szkolna 17',
-      zipCode: '15-950',
-      city: 'Białystok',
-      country: 'Poland',
-      phone: '123459876',
-      contacts: {
-        email: true,
-        phone: false,
-      },
-    };
+const newUserData = {
+  firstName: 'John',
+  lastName: 'Smith',
+  username: 'jsmith',
+  email: 'jsmith@domain.com',
+  password: 'Pa$$w0rd',
+  street: 'Szkolna 17',
+  zipCode: '15-950',
+  city: 'Białystok',
+  country: 'Poland',
+  phone: '123459876',
+  contacts: {
+    email: true,
+    phone: false,
+  },
+};
 
+describe('POST /users', () => {
+  test('Should signup a new user and create verification code', async () => {
+    const dateBefore = moment();
     const {
       body: { user },
-    } = await request(app).post('/users').send(data).expect(201);
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.1')
+      .send(newUserData)
+      .expect(201);
+    const dateAfter = moment();
 
     const newUser = await User.findById(user._id).lean();
     expect(newUser).not.toBeNull();
 
-    const isPasswordCorrect = await bcrypt.compare(data.password, newUser.password);
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(1);
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: 'jsmith@domain.com',
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        expireAt: verificationCodes[0].expireAt,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+
+    const isPasswordCorrect = await bcrypt.compare(newUserData.password, newUser.password);
     expect(isPasswordCorrect).toEqual(true);
     expect(user.password).not.toEqual('Pa$$w0rd');
 
     expect(user).toEqual({
-      ...data,
-      password: undefined,
+      ...newUserData,
       _id: newUser._id.toJSON(),
-      firstName: 'John',
-      lastName: 'Smith',
-      username: 'jsmith',
-      email: 'jsmith@domain.com',
-      street: 'Szkolna 17',
-      zipCode: '15-950',
-      city: 'Białystok',
-      country: 'Poland',
-      phone: '123459876',
+      password: undefined,
       cart: [],
-      contacts: {
-        email: true,
-        phone: false,
-      },
+      status: 'pending',
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     });
     expect(user.createdAt).toBeDefined();
-    expect(user.updatedAt).toBeDefined();
+    expect(
+      moment(user.createdAt).isBetween(
+        dateBefore.subtract(1, 'minute'),
+        dateAfter.add(1, 'minute'),
+      ),
+    ).toEqual(true);
   });
 
-  test('Should signup a new user without isAdmin, empty cart, 1 token, createdAt and updatedAt with current time', async () => {
-    const data = {
-      firstName: 'John',
-      lastName: 'Smith',
-      username: 'jsmith',
-      email: 'jsmith@domain.com',
-      password: 'Pa$$w0rd',
-      street: 'Szkolna 17',
-      zipCode: '15-950',
-      city: 'Białystok',
-      country: 'Poland',
-      phone: '123459876',
-      isAdmin: true,
-      cart: userOne.cart,
-      tokens: userOne.tokens,
-      createdAt: '2020-11-11T11:11:11.911Z',
-      updatedAt: '2020-11-11T11:11:11.911Z',
-      contacts: {
-        email: true,
-        phone: false,
-      },
-    };
-
+  test('Should signup a new user without isAdmin, empty cart, 1 token, createdAt with current time', async () => {
     const {
       body: { user },
-    } = await request(app).post('/users').send(data).expect(201);
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.2')
+      .send({
+        ...newUserData,
+        isAdmin: true,
+        cart: userOne.cart,
+        tokens: userOne.tokens,
+        createdAt: '2020-11-11T11:11:11.911Z',
+      })
+      .expect(201);
 
     const newUser = await User.findById(user._id).lean();
 
     expect(newUser.tokens).toHaveLength(1);
 
     expect(user).toEqual({
-      ...data,
-      password: undefined,
+      ...newUserData,
       _id: newUser._id.toJSON(),
-      firstName: 'John',
-      lastName: 'Smith',
-      username: 'jsmith',
-      email: 'jsmith@domain.com',
-      street: 'Szkolna 17',
-      zipCode: '15-950',
-      city: 'Białystok',
-      country: 'Poland',
-      phone: '123459876',
+      password: undefined,
       isAdmin: undefined,
       tokens: undefined,
       cart: [],
-      contacts: {
-        email: true,
-        phone: false,
-      },
+      status: 'pending',
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     });
     expect(user.createdAt).not.toEqual('2020-11-11T11:11:11.911Z');
-    expect(user.updatedAt).not.toEqual('2020-11-11T11:11:11.911Z');
   });
 
   test('Should NOT signup user with invalid username', async () => {
     await request(app)
       .post('/users')
+      .set('X-Forwarded-For', '192.168.2.3')
       .send({
-        firstName: 'John',
-        lastName: 'Smith',
+        ...newUserData,
         username: 'j',
-        email: 'jsmith@domain.com',
-        password: 'Pa$$w0rd',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
-        phone: '123459876',
-        contacts: {
-          email: true,
-          phone: false,
-        },
       })
       .expect(400);
   });
@@ -154,21 +134,10 @@ describe('POST /users', () => {
   test('Should NOT signup user with invalid email', async () => {
     await request(app)
       .post('/users')
+      .set('X-Forwarded-For', '192.168.2.4')
       .send({
-        firstName: 'John',
-        lastName: 'Smith',
-        username: 'jsmith',
+        ...newUserData,
         email: 'johnsmith',
-        password: 'Pa$$w0rd',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
-        phone: '123459876',
-        contacts: {
-          email: true,
-          phone: false,
-        },
       })
       .expect(400);
   });
@@ -176,21 +145,10 @@ describe('POST /users', () => {
   test('Should NOT signup user with invalid password', async () => {
     await request(app)
       .post('/users')
+      .set('X-Forwarded-For', '192.168.2.5')
       .send({
-        firstName: 'John',
-        lastName: 'Smith',
-        username: 'johnsmith',
-        email: 'jsmith@domain.com',
+        ...newUserData,
         password: 'pass',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
-        phone: '123459876',
-        contacts: {
-          email: true,
-          phone: false,
-        },
       })
       .expect(400);
   });
@@ -198,17 +156,10 @@ describe('POST /users', () => {
   test('Should NOT signup user without contacts', async () => {
     await request(app)
       .post('/users')
+      .set('X-Forwarded-For', '192.168.2.6')
       .send({
-        firstName: 'John',
-        lastName: 'Smith',
-        username: 'johnsmith',
-        email: 'jsmith@domain.com',
-        password: 'pass',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
-        phone: '123459876',
+        ...newUserData,
+        contacts: undefined,
       })
       .expect(400);
   });
@@ -216,17 +167,9 @@ describe('POST /users', () => {
   test('Should NOT signup user with incomplete contacts', async () => {
     await request(app)
       .post('/users')
+      .set('X-Forwarded-For', '192.168.2.7')
       .send({
-        firstName: 'John',
-        lastName: 'Smith',
-        username: 'johnsmith',
-        email: 'jsmith@domain.com',
-        password: 'pass',
-        street: 'Szkolna 17',
-        zipCode: '15-950',
-        city: 'Białystok',
-        country: 'Poland',
-        phone: '123459876',
+        ...newUserData,
         contacts: {
           email: true,
         },
@@ -327,6 +270,394 @@ describe('POST /users/logout', () => {
     const user = await User.findById(userOne._id).lean();
     expect(user.tokens).toEqual([]);
   });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app).post('/users/logout').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+});
+
+describe('POST /users/send-account-verification-email', () => {
+  test('Should create verification code to freshly created user', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.8')
+      .send(newUserData)
+      .expect(201);
+
+    const newUser = await User.findById(user._id).lean();
+
+    await request(app)
+      .post('/users/send-account-verification-email')
+      .set('Cookie', [`token=${newUser.tokens[0].token}`])
+      .expect(200);
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: 'jsmith@domain.com',
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        expireAt: verificationCodes[0].expireAt,
+      },
+      {
+        _id: verificationCodes[1]._id,
+        email: 'jsmith@domain.com',
+        code: verificationCodes[1].code,
+        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        expireAt: verificationCodes[1].expireAt,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+    expect(validateUUID(verificationCodes[1].code, 4)).toEqual(true);
+  });
+
+  test('Should NOT create verification code if user already has status active', async () => {
+    const { body } = await request(app)
+      .post('/users/send-account-verification-email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .expect(400);
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+
+    expect(body).toEqual({
+      message: 'Your account is already active',
+    });
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app).post('/users/send-account-verification-email').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+});
+
+describe('GET /users/:id/verify-account/:code', () => {
+  test('Should verify account of freshly created user', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.9')
+      .send(newUserData)
+      .expect(201);
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    await request(app)
+      .get(`/users/${user._id}/verify-account/${verificationCode.code}`)
+      .expect(302)
+      .expect('Location', process.env.FRONTEND_URL);
+
+    const newUser = await User.findById(user._id).lean();
+    expect(newUser.status).toEqual('active');
+  });
+
+  test('Should NOT verify account of freshly created user if type of verification code is incorrect', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.10')
+      .send(newUserData)
+      .expect(201);
+
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.10')
+      .send({ email: user.email })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.find({ email: user.email }).lean();
+
+    await request(app)
+      .get(`/users/${user._id}/verify-account/${verificationCode[1].code}`)
+      .expect(400);
+
+    const newUser = await User.findById(user._id).lean();
+    expect(newUser.status).toEqual('pending');
+  });
+
+  test('Should NOT verify account if verification code is incorrect', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.11')
+      .send(newUserData)
+      .expect(201);
+
+    const { body } = await request(app)
+      .get(`/users/${user._id}/verify-account/incorrectCode`)
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or your account already does not exist',
+    });
+
+    const newUser = await User.findById(user._id).lean();
+    expect(newUser.status).toEqual('pending');
+  });
+
+  test(`Should NOT verify account if passed user id does not match to user's id whose email is in verification code record`, async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.12')
+      .send(newUserData)
+      .expect(201);
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    const { body } = await request(app)
+      .get(`/users/${new mongoose.Types.ObjectId()}/verify-account/${verificationCode.code}`)
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or your account already does not exist',
+    });
+
+    const newUser = await User.findById(user._id).lean();
+    expect(newUser.status).toEqual('pending');
+  });
+
+  test('Should NOT verify account if user does not exist', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.13')
+      .send(newUserData)
+      .expect(201);
+
+    const newUserBefore = await User.findById(user._id).lean();
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    await request(app)
+      .delete('/users/me')
+      .set('Cookie', [`token=${newUserBefore.tokens[0].token}`])
+      .send({ currentPassword: newUserData.password })
+      .expect(200);
+
+    const { body } = await request(app)
+      .get(`/users/${user._id}/verify-account/${verificationCode.code}`)
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or your account already does not exist',
+    });
+  });
+});
+
+describe('POST /users/request-for-reset-password', () => {
+  test('Should create correct verification code', async () => {
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.14')
+      .send({ email: userOne.email })
+      .expect(200);
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: userOne.email,
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.RESET_PASSWORD,
+        expireAt: verificationCodes[0].expireAt,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+  });
+
+  test('Should get 404 if given email is not found in database', async () => {
+    const { body } = await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.15')
+      .send({ email: 'notfound@domain.com' })
+      .expect(404);
+
+    expect(body).toEqual({
+      message: `We can't find any user with this email`,
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  test('Should get 400 if invalid email is given', async () => {
+    const { body } = await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.16')
+      .send({ email: 'incorrectEmail' })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: `"email" must be a valid email`,
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  test('Should get 400 if no email is given', async () => {
+    const { body } = await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.17')
+      .expect(400);
+
+    expect(body).toEqual({
+      message: `"email" is required`,
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+});
+
+describe('GET /users/:id/reset-password/:code', () => {
+  test('Should reset password', async () => {
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.18')
+      .send({ email: userOne.email })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.findOne({ email: userOne.email }).lean();
+
+    const { body } = await request(app)
+      .get(`/users/${userOne._id}/reset-password/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.18')
+      .expect(200);
+
+    expect(body).toEqual({
+      message: 'New password has been sent successfully. Go back to your inbox',
+    });
+
+    const userAfter = await User.findById(userOne._id).lean();
+    const isPasswordStillTheSame = await bcrypt.compare(userOne.password, userAfter.password);
+    expect(isPasswordStillTheSame).toEqual(false);
+  });
+
+  test('Should NOT reset password if type of verification code is incorrect', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.19')
+      .send(newUserData)
+      .expect(201);
+
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.19')
+      .send({ email: user.email })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.find({ email: user.email }).lean();
+
+    await request(app)
+      .get(`/users/${user._id}/reset-password/${verificationCode[0].code}`)
+      .set('X-Forwarded-For', '192.168.2.19')
+      .expect(400);
+
+    const newUser = await User.findById(user._id).lean();
+    const isPasswordStillTheSame = await bcrypt.compare(userOne.password, newUser.password);
+    expect(isPasswordStillTheSame).toEqual(true);
+  });
+
+  test('Should NOT verify account if verification code is incorrect', async () => {
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.25')
+      .send({ email: userOne.email })
+      .expect(200);
+
+    const { body } = await request(app)
+      .get(`/users/${userOne._id}/reset-password/incorrectCode`)
+      .set('X-Forwarded-For', '192.168.2.25')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const userAfter = await User.findById(userOne._id).lean();
+    const isPasswordStillTheSame = await bcrypt.compare(userOne.password, userAfter.password);
+    expect(isPasswordStillTheSame).toEqual(true);
+  });
+
+  test(`Should NOT reset password if passed user id does not match to user's id whose email is in verification code record`, async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.21')
+      .send(newUserData)
+      .expect(201);
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    const { body } = await request(app)
+      .get(`/users/${new mongoose.Types.ObjectId()}/reset-password/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.21')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const newUser = await User.findById(user._id).lean();
+    const isPasswordStillTheSame = await bcrypt.compare(userOne.password, newUser.password);
+    expect(isPasswordStillTheSame).toEqual(true);
+  });
+
+  test('Should NOT reset password if user does not exist', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.22')
+      .send(newUserData)
+      .expect(201);
+
+    const newUserBefore = await User.findById(user._id).lean();
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    await request(app)
+      .delete('/users/me')
+      .set('Cookie', [`token=${newUserBefore.tokens[0].token}`])
+      .send({ currentPassword: newUserData.password })
+      .expect(200);
+
+    const { body } = await request(app)
+      .get(`/users/${user._id}/reset-password/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.22')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const userAfter = await User.findById(user._id).lean();
+    expect(userAfter).toBeNull();
+  });
 });
 
 describe('GET /users/me', () => {
@@ -368,7 +699,6 @@ describe('GET /users/me', () => {
       _id: userOne._id.toJSON(),
       cart: cartToCompare,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     });
   });
 
@@ -405,12 +735,14 @@ describe('GET /users/me', () => {
       _id: userOne._id.toJSON(),
       cart: cartToCompare,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     });
   });
 
   test('Should get 401 if user is unauthenticated', async () => {
-    await request(app).get('/users/me').expect(401);
+    const { body } = await request(app).get('/users/me').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -439,7 +771,6 @@ describe('GET /users/:username', () => {
 
   test('Should get 404 if user with passed username does not exist', async () => {
     const { body } = await request(app).get('/users/notexist').expect(404);
-
     expect(body).toEqual({
       message: 'User with given username does not exist',
     });
@@ -482,10 +813,10 @@ describe('PATCH /users/me', () => {
 
       expect(user).toEqual({
         _id: userOne._id.toJSON(),
-        username: userOne.username,
         ...updatesToCompare,
+        username: userOne.username,
+        status: userOne.status,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
         cart: [
           {
             _id: userOne.cart[0]._id.toJSON(),
@@ -524,7 +855,6 @@ describe('PATCH /users/me', () => {
         ],
       });
       expect(user.createdAt).toBeDefined();
-      expect(user.updatedAt).toBeDefined();
     });
 
     test('Should update phone field and get cart length 1 if product of second cart item is deleted before', async () => {
@@ -610,25 +940,6 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update updatedAt', async () => {
-      const newUpdatedAt = '2020-11-11T11:11:11.911Z';
-
-      const { body } = await request(app)
-        .patch('/users/me')
-        .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .send({
-          updatedAt: newUpdatedAt,
-        })
-        .expect(400);
-
-      const user = await User.findById(userOne._id).lean();
-      expect(user.updatedAt).not.toEqual(newUpdatedAt);
-
-      expect(body).toEqual({
-        message: `You can't change these data`,
-      });
-    });
-
     test('Should NOT update isAdmin', async () => {
       const { body } = await request(app)
         .patch('/users/me')
@@ -680,16 +991,20 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should get 401 if user is unauthenticated', async () => {
+    test('Should NOT update status', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
-          country: 'Russia',
+          status: 'pending',
         })
-        .expect(401);
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.status).toEqual(userOne.status);
 
       expect(body).toEqual({
-        message: 'Please login',
+        message: `You can't change these data`,
       });
     });
   });
@@ -800,6 +1115,29 @@ describe('PATCH /users/me', () => {
       });
     });
   });
+
+  describe('User unauthenticated or with status pending', () => {
+    test('Should get 401 if user has status pending', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userFour.tokens[0].token}`])
+        .send({
+          country: 'Russia',
+        })
+        .expect(401);
+
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
+      });
+    });
+
+    test('Should get 401 if user is unauthenticated', async () => {
+      const { body } = await request(app).get('/users/me').expect(401);
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
+      });
+    });
+  });
 });
 
 describe('PATCH /users/add-admin', () => {
@@ -871,8 +1209,22 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
   test('Should get 401 if user is unauthenticated', async () => {
-    await request(app).patch('/users/add-admin').expect(401);
+    const { body } = await request(app).patch('/users/add-admin').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
@@ -933,13 +1285,27 @@ describe('PATCH /users/remove-admin', () => {
     });
   });
 
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+
   test('Should get 401 if user is unauthenticated', async () => {
-    await request(app).patch('/users/remove-admin').expect(401);
+    const { body } = await request(app).patch('/users/remove-admin').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
   });
 });
 
 describe('DELETE /users/me', () => {
-  test('Should delete user profile and his products', async () => {
+  test('Should delete user profile and its products', async () => {
     await request(app)
       .delete('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -953,6 +1319,33 @@ describe('DELETE /users/me', () => {
     expect(user).toBeNull();
     expect(prodOne).toBeNull();
     expect(products).toHaveLength(3);
+  });
+
+  test('Should delete user profile and its verification code if user is freshly created', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.23')
+      .send(newUserData)
+      .expect(201);
+
+    const newUserBefore = await User.findById(user._id).lean();
+
+    const verificationCodesBefore = await VerificationCode.find().lean();
+    expect(verificationCodesBefore).toHaveLength(1);
+
+    await request(app)
+      .delete('/users/me')
+      .set('Cookie', [`token=${newUserBefore.tokens[0].token}`])
+      .send({ currentPassword: newUserData.password })
+      .expect(200);
+
+    const newUserAfter = await User.findById(newUserBefore._id).lean();
+    expect(newUserAfter).toBeNull();
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
   });
 
   test('Should NOT delete user profile if currentPassword is incorrect', async () => {
@@ -985,6 +1378,101 @@ describe('DELETE /users/me', () => {
   });
 
   test('Should get 401 if user is unauthenticated', async () => {
-    await request(app).delete('/users/me').expect(401);
+    const { body } = await request(app).delete('/users/me').expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+  });
+});
+
+describe('generateVerificationCode()', () => {
+  test('Should create correct verification code return correct verification link (type ACCOUNT_VERIFICATION)', async () => {
+    const user = await User.findById(userOne._id);
+    const verificationLink = await user.generateVerificationCode(
+      verificationCodeTypes.ACCOUNT_VERIFICATION,
+    );
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(1);
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: userOne.email,
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        expireAt: verificationCodes[0].expireAt,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+
+    expect(verificationLink).toEqual(
+      `${process.env.API_URL}/users/${user._id}/verify-account/${verificationCodes[0].code}`,
+    );
+  });
+
+  test('Should create correct verification code return correct verification link (type RESET_PASSWORD)', async () => {
+    const user = await User.findById(userOne._id);
+    const verificationLink = await user.generateVerificationCode(
+      verificationCodeTypes.RESET_PASSWORD,
+    );
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(1);
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: userOne.email,
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.RESET_PASSWORD,
+        expireAt: verificationCodes[0].expireAt,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+
+    expect(verificationLink).toEqual(
+      `${process.env.API_URL}/users/${user._id}/reset-password/${verificationCodes[0].code}`,
+    );
+  });
+});
+
+describe('Agenda - remove expired users', () => {
+  test('Should delete users with status pending and createdAt at least 1 hour earlier', async () => {
+    const response1 = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.24')
+      .send({
+        ...newUserData,
+        username: 'jsmith1',
+        email: 'jsmith1@domain.com',
+      })
+      .expect(201);
+
+    const response2 = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.24')
+      .send({
+        ...newUserData,
+        username: 'jsmith2',
+        email: 'jsmith2@domain.com',
+      })
+      .expect(201);
+
+    const dayAgoDate = moment().subtract(1, 'hour').toDate();
+    await User.findOneAndUpdate({ _id: response1.body.user._id }, { createdAt: dayAgoDate });
+    await User.findOneAndUpdate({ _id: response2.body.user._id }, { createdAt: dayAgoDate });
+
+    await User.deleteMany({
+      status: 'pending',
+      createdAt: { $lte: moment().subtract(1, 'hour').toDate() },
+    });
+
+    const users = await User.find().lean();
+    expect(users).toHaveLength(4);
+
+    const user1 = await User.findById(response1.body.user._id).lean();
+    const user2 = await User.findById(response2.body.user._id).lean();
+
+    expect(user1).toBeNull();
+    expect(user2).toBeNull();
   });
 });

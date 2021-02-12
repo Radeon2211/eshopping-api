@@ -7,7 +7,7 @@ const imagemin = require('imagemin');
 const mozjpeg = require('imagemin-mozjpeg');
 const Product = require('../models/productModel');
 const User = require('../models/userModel');
-const auth = require('../middlewares/auth');
+const { authActive } = require('../middlewares/auth');
 const getCurrentUser = require('../middlewares/getCurrentUser');
 const { photoLimiter } = require('../middlewares/limiters');
 const { createSortObject, getCorrectProduct } = require('../shared/utility');
@@ -15,7 +15,7 @@ const { pages, SELLER_USERNAME_POPULATE } = require('../shared/constants');
 
 const router = new express.Router();
 
-router.post('/products', auth, async (req, res) => {
+router.post('/products', authActive, async (req, res) => {
   try {
     const product = new Product({
       ...req.body,
@@ -125,7 +125,7 @@ router.get('/products/:id', async (req, res) => {
   }
 });
 
-router.patch('/products/:id', auth, async (req, res) => {
+router.patch('/products/:id', authActive, async (req, res) => {
   try {
     const updateKeys = Object.keys(req.body);
     const allowedUpdates = ['name', 'description', 'price', 'quantity', 'condition'];
@@ -163,7 +163,7 @@ router.patch('/products/:id', auth, async (req, res) => {
   }
 });
 
-router.delete('/products/:id', auth, async (req, res) => {
+router.delete('/products/:id', authActive, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
@@ -187,7 +187,8 @@ const upload = multer({
   },
   fileFilter(req, file, cb) {
     if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
-      return cb(new Error('Please upload a JPG or PNG'));
+      req.multerError = 'Please upload a JPG or PNG image';
+      cb(undefined, false);
     }
     cb(undefined, true);
   },
@@ -195,10 +196,14 @@ const upload = multer({
 
 router.post(
   '/products/:id/photo',
-  auth,
+  authActive,
   upload.single('photo'),
   async (req, res) => {
     try {
+      if (req.multerError) {
+        return res.status(400).send({ message: req.multerError });
+      }
+
       const product = await Product.findById(req.params.id);
 
       if (!product) {
@@ -240,7 +245,7 @@ router.get('/products/:id/photo', photoLimiter, async (req, res) => {
   }
 });
 
-router.delete('/products/:id/photo', auth, async (req, res) => {
+router.delete('/products/:id/photo', authActive, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(SELLER_USERNAME_POPULATE);
 

@@ -39,6 +39,11 @@ const updateCartActions = {
 
 const MAX_CART_ITEMS_NUMBER = 50;
 
+const verificationCodeTypes = {
+  RESET_PASSWORD: 'RESET_PASSWORD',
+  ACCOUNT_VERIFICATION: 'ACCOUNT_VERIFICATION',
+};
+
 function MyError(message) {
   this.message = message;
 }
@@ -97,8 +102,9 @@ module.exports = {
   CART_POPULATE,
   pages,
   orderTypes,
-  MyError,
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,
+  verificationCodeTypes,
+  MyError,
   DELIVERY_ADDRESS,
 };

@@ -302,8 +302,8 @@ describe('Utility', () => {
         city: userOne.city,
         country: userOne.country,
         phone: userOne.phone,
+        status: userOne.status,
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
         cart: [
           {
             _id: userOne.cart[0]._id,
@@ -340,7 +340,6 @@ describe('Utility', () => {
         ],
       });
       expect(user.createdAt).toBeDefined();
-      expect(user.updatedAt).toBeDefined();
     });
   });
 

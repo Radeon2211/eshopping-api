@@ -4,25 +4,28 @@ const mongoose = require('mongoose');
 const { Binary } = require('mongodb');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
+const User = require('../src/models/userModel');
 const {
   userOne,
   userTwo,
+  userThree,
+  userFour,
   productOne,
   productTwo,
   productThree,
   productFour,
-  userThree,
   setupDatabase,
 } = require('./fixtures/db');
 const { pages } = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
 
-const uploadPhotoForProdOne = async () => {
-  await request(app)
+const uploadPhotoForProdOne = async (filename) => {
+  const response = await request(app)
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .attach('photo', 'tests/fixtures/mushrooms.jpg');
+    .attach('photo', `tests/fixtures/${filename}`);
+  return response;
 };
 
 describe('POST /products', () => {
@@ -56,9 +59,8 @@ describe('POST /products', () => {
     });
   });
 
-  test('Should NOT create product if user is unauthenticated', async () => {
+  test('Should get 401 if user has status pending', async () => {
     const newProductId = new mongoose.Types.ObjectId();
-
     const data = {
       _id: newProductId,
       name: 'Mega mushrooms',
@@ -68,7 +70,36 @@ describe('POST /products', () => {
       condition: 'not_applicable',
     };
 
-    await request(app).post('/products').send(data).expect(401);
+    const { body } = await request(app)
+      .post('/products')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .send(data)
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(newProductId).lean();
+    expect(product).toBeNull();
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const newProductId = new mongoose.Types.ObjectId();
+    const data = {
+      _id: newProductId,
+      name: 'Mega mushrooms',
+      description: 'Healthy mega mushrooms',
+      price: 1.5,
+      quantity: 1000,
+      condition: 'not_applicable',
+    };
+
+    const { body } = await request(app).post('/products').send(data).expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
 
     const product = await Product.findById(newProductId).lean();
     expect(product).toBeNull();
@@ -617,18 +648,6 @@ describe('PATCH /products/:id', () => {
     });
   });
 
-  test('Should NOT update product if user is unauthenticated', async () => {
-    await request(app)
-      .patch(`/products/${productOne._id}`)
-      .send({
-        name: 'Cool mushrooms',
-      })
-      .expect(401);
-
-    const product = await Product.findById(productOne._id).lean();
-    expect(product.name).toEqual(productOne.name);
-  });
-
   test('Should get 404 if passed id is not valid ObjectId', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
 
@@ -673,6 +692,39 @@ describe('PATCH /products/:id', () => {
       message: `You can't change these data!`,
     });
   });
+
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .patch(`/products/${productOne._id}`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .send({
+        name: 'Cool mushrooms',
+      })
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.name).toEqual(productOne.name);
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app)
+      .patch(`/products/${productOne._id}`)
+      .send({
+        name: 'Cool mushrooms',
+      })
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.name).toEqual(productOne.name);
+  });
 });
 
 describe('DELETE /products/:id', () => {
@@ -694,12 +746,6 @@ describe('DELETE /products/:id', () => {
 
     const product = await Product.findById(productOne._id).lean();
     expect(product).toBeNull();
-  });
-
-  test('Should NOT delete product if user is unauthenticated', async () => {
-    await request(app).delete(`/products/${productOne._id}`).expect(401);
-    const product = await Product.findById(productOne._id).lean();
-    expect(product).not.toBeNull();
   });
 
   test(`Should NOT delete other user's product`, async () => {
@@ -737,11 +783,33 @@ describe('DELETE /products/:id', () => {
 
     expect(body.kind).toEqual('ObjectId');
   });
+
+  test('Should get 401 if user has staus pending', async () => {
+    await User.findByIdAndUpdate(userOne._id, { status: 'pending' });
+
+    const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product).not.toBeNull();
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product).not.toBeNull();
+  });
 });
 
 describe('POST /products/:id/photo', () => {
   test('Should upload photo for first product', async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     const product = await Product.findById(productOne._id).lean();
 
@@ -755,6 +823,20 @@ describe('POST /products/:id/photo', () => {
       updatedAt: product.updatedAt,
     });
     expect(product.photo).toBeInstanceOf(Binary);
+  });
+
+  test('Should upload photo for first product if it has size almost maximum', async () => {
+    await uploadPhotoForProdOne('almost-max-size.jpg');
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.photo).toBeInstanceOf(Binary);
+  });
+
+  test('Should NOT upload photo for first product if it has size more than maximum', async () => {
+    await uploadPhotoForProdOne('more-than-max-size.jpg');
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.photo).toBeUndefined();
   });
 
   test('Should NOT upload photo for first product by not a seller', async () => {
@@ -772,11 +854,12 @@ describe('POST /products/:id/photo', () => {
     });
   });
 
-  test('Should NOT upload photo if user is unauthenticated', async () => {
-    await request(app)
-      .post(`/products/${productOne._id}/photo`)
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
-      .expect(401);
+  test('Should NOT upload photo if extension is other than jpg/png', async () => {
+    const { body } = await uploadPhotoForProdOne('dancing-mushroom.gif');
+
+    expect(body).toEqual({
+      message: 'Please upload a JPG or PNG image',
+    });
 
     const product = await Product.findById(productOne._id).lean();
     expect(product.photo).toBeUndefined();
@@ -805,11 +888,40 @@ describe('POST /products/:id/photo', () => {
 
     expect(body.kind).toEqual('ObjectId');
   });
+
+  test('Should get 401 if user has status pending', async () => {
+    const { body } = await request(app)
+      .post(`/products/${productOne._id}/photo`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product).not.toBeNull();
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    const { body } = await request(app)
+      .post(`/products/${productOne._id}/photo`)
+      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.photo).toBeUndefined();
+  });
 });
 
 describe('GET /products/:id/photo', () => {
   test('Should get product photo', async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
       .get(`/products/${productOne._id}/photo`)
@@ -853,7 +965,7 @@ describe('GET /products/:id/photo', () => {
 
 describe('DELETE /products/:id/photo', () => {
   test('Should seller delete product photo', async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
       .delete(`/products/${productOne._id}/photo`)
@@ -874,7 +986,7 @@ describe('DELETE /products/:id/photo', () => {
   });
 
   test(`Should admin delete other user's product photo`, async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
       .delete(`/products/${productOne._id}/photo`)
@@ -885,20 +997,8 @@ describe('DELETE /products/:id/photo', () => {
     expect(product.photo).toBeUndefined();
   });
 
-  test('Should NOT delete photo if user is unauthenticated', async () => {
-    await uploadPhotoForProdOne();
-
-    await request(app)
-      .delete(`/products/${productOne._id}/photo`)
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
-      .expect(401);
-
-    const product = await Product.findById(productOne._id).lean();
-    expect(product.photo).toBeInstanceOf(Binary);
-  });
-
   test('Should get 404 if product with passed ObjectId does not exist', async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     const incorrectId = new mongoose.Types.ObjectId();
 
@@ -916,7 +1016,7 @@ describe('DELETE /products/:id/photo', () => {
   });
 
   test('Should get 500 if passed ID is not correct ObjectId', async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
       .delete('/products/incorrectId/photo')
@@ -939,7 +1039,7 @@ describe('DELETE /products/:id/photo', () => {
   });
 
   test(`Should get 403 if user is trying to delete other user's product photo`, async () => {
-    await uploadPhotoForProdOne();
+    await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
@@ -952,5 +1052,38 @@ describe('DELETE /products/:id/photo', () => {
     expect(body).toEqual({
       message: 'You are not allowed to do this',
     });
+  });
+
+  test('Should get 401 if user has status pending', async () => {
+    await uploadPhotoForProdOne('mushrooms.jpg');
+
+    const { body } = await request(app)
+      .delete(`/products/${productOne._id}/photo`)
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.photo).toBeInstanceOf(Binary);
+  });
+
+  test('Should get 401 if user is unauthenticated', async () => {
+    await uploadPhotoForProdOne('mushrooms.jpg');
+
+    const { body } = await request(app)
+      .delete(`/products/${productOne._id}/photo`)
+      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .expect(401);
+
+    expect(body).toEqual({
+      message: 'This route is blocked for you',
+    });
+
+    const product = await Product.findById(productOne._id).lean();
+    expect(product.photo).toBeInstanceOf(Binary);
   });
 });

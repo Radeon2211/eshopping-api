@@ -2,9 +2,11 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
-const { MyError, DELIVERY_ADDRESS } = require('../shared/constants');
+const VerificationCode = require('./verificationCodeModel');
+const { MyError, DELIVERY_ADDRESS, verificationCodeTypes } = require('../shared/constants');
 
 const userSchema = new mongoose.Schema(
   {
@@ -47,6 +49,14 @@ const userSchema = new mongoose.Schema(
         required: true,
       },
     },
+    isAdmin: {
+      type: Boolean,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ['pending', 'active'],
+    },
     cart: [
       {
         quantity: {
@@ -60,9 +70,6 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-    isAdmin: {
-      type: Boolean,
-    },
     tokens: [
       {
         token: {
@@ -71,10 +78,13 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     versionKey: false,
-    timestamps: true,
   },
 );
 
@@ -165,10 +175,28 @@ userSchema.statics.findByCredentials = async (email, password) => {
   throw new MyError('You entered incorrect credentials');
 };
 
+userSchema.methods.generateVerificationCode = async function (type) {
+  const user = this;
+  const randomCode = uuidv4();
+
+  const verificationCode = new VerificationCode({
+    email: user.email,
+    code: randomCode,
+    type,
+  });
+  await verificationCode.save();
+
+  const verificationLink =
+    type === verificationCodeTypes.ACCOUNT_VERIFICATION
+      ? `${process.env.API_URL}/users/${user._id}/verify-account/${randomCode}`
+      : `${process.env.API_URL}/users/${user._id}/reset-password/${randomCode}`;
+  return verificationLink;
+};
+
 userSchema.pre('save', async function (next) {
   const user = this;
   if (user.isModified('password')) {
-    user.password = await bcrypt.hash(user.password, 12);
+    user.password = await bcrypt.hash(user.password, +process.env.BCRYPT_ROUNDS);
   }
   next();
 });
@@ -176,6 +204,7 @@ userSchema.pre('save', async function (next) {
 userSchema.pre('remove', async function (next) {
   const user = this;
   await Product.deleteMany({ seller: user._id });
+  await VerificationCode.deleteMany({ email: user.email });
   next();
 });
 

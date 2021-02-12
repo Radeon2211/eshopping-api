@@ -3,7 +3,16 @@ const mongoose = require('mongoose');
 const User = require('../../src/models/userModel');
 const Product = require('../../src/models/productModel');
 const Order = require('../../src/models/orderModel');
+const VerificationCode = require('../../src/models/verificationCodeModel');
 
+const userOneId = new mongoose.Types.ObjectId();
+const userTwoId = new mongoose.Types.ObjectId();
+const userThreeId = new mongoose.Types.ObjectId();
+const userFourId = new mongoose.Types.ObjectId();
+const userOneTokenId = new mongoose.Types.ObjectId();
+const userTwoTokenId = new mongoose.Types.ObjectId();
+const userThreeTokenId = new mongoose.Types.ObjectId();
+const userFourTokenId = new mongoose.Types.ObjectId();
 const cartItemOneId = new mongoose.Types.ObjectId();
 const cartItemTwoId = new mongoose.Types.ObjectId();
 const cartItemThreeId = new mongoose.Types.ObjectId();
@@ -12,12 +21,6 @@ const productOneId = new mongoose.Types.ObjectId();
 const productTwoId = new mongoose.Types.ObjectId();
 const productThreeId = new mongoose.Types.ObjectId();
 const productFourId = new mongoose.Types.ObjectId();
-const userOneId = new mongoose.Types.ObjectId();
-const userTwoId = new mongoose.Types.ObjectId();
-const userThreeId = new mongoose.Types.ObjectId();
-const userOneTokenId = new mongoose.Types.ObjectId();
-const userTwoTokenId = new mongoose.Types.ObjectId();
-const userThreeTokenId = new mongoose.Types.ObjectId();
 const orderOneId = new mongoose.Types.ObjectId();
 const orderTwoId = new mongoose.Types.ObjectId();
 const orderThreeId = new mongoose.Types.ObjectId();
@@ -38,6 +41,7 @@ const userOne = {
     email: true,
     phone: true,
   },
+  status: 'active',
   cart: [
     {
       _id: cartItemTwoId,
@@ -74,6 +78,7 @@ const userTwo = {
     email: false,
     phone: false,
   },
+  status: 'active',
   cart: [
     {
       _id: cartItemOneId,
@@ -106,6 +111,7 @@ const userThree = {
     phone: true,
   },
   isAdmin: true,
+  status: 'active',
   cart: [
     {
       _id: cartItemThreeId,
@@ -117,6 +123,32 @@ const userThree = {
     {
       _id: userThreeTokenId,
       token: jwt.sign({ _id: userThreeId }, process.env.JWT_SECRET),
+    },
+  ],
+};
+
+const userFour = {
+  _id: userFourId,
+  firstName: 'Jan',
+  lastName: 'Rodo',
+  username: 'janrodo',
+  email: 'user4@domain.com',
+  password: 'Pa$$w0rd',
+  street: 'Szkolna 17',
+  zipCode: '15-950',
+  city: 'Białystok',
+  country: 'Poland',
+  phone: '123456789',
+  contacts: {
+    email: true,
+    phone: true,
+  },
+  status: 'pending',
+  cart: [],
+  tokens: [
+    {
+      _id: userFourTokenId,
+      token: jwt.sign({ _id: userFourId }, process.env.JWT_SECRET),
     },
   ],
 };
@@ -217,9 +249,11 @@ const setupDatabase = async () => {
   await User.deleteMany();
   await Product.deleteMany();
   await Order.deleteMany();
+  await VerificationCode.deleteMany();
   await new User(userOne).save();
   await new User(userTwo).save();
   await new User(userThree).save();
+  await new User(userFour).save();
   await new Product(productOne).save();
   await new Product(productTwo).save();
   await new Product(productThree).save();
@@ -230,6 +264,7 @@ module.exports = {
   userOne,
   userTwo,
   userThree,
+  userFour,
   cartItemOneId,
   cartItemTwoId,
   cartItemThreeId,

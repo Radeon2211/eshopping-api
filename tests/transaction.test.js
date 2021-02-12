@@ -4,6 +4,7 @@ const {
   userOne,
   userTwo,
   userThree,
+  userFour,
   productOne,
   productTwo,
   productFour,
@@ -296,6 +297,26 @@ describe('PATCH /transaction', () => {
 
       expect(body).toEqual({
         message: '"Product" is required',
+      });
+    });
+  });
+
+  describe('User is unauthenticated or has status pending', () => {
+    test('Should get 401 if user has status pending', async () => {
+      const { body } = await request(app)
+        .patch('/transaction')
+        .set('Cookie', [`token=${userFour.tokens[0].token}`])
+        .expect(401);
+
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
+      });
+    });
+
+    test('Should get 401 if user is unauthenticated', async () => {
+      const { body } = await request(app).patch('/transaction').expect(401);
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
       });
     });
   });
