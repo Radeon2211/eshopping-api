@@ -314,6 +314,9 @@ router.patch('/users/add-admin', authActive, async (req, res) => {
     if (req.body.email === req.user.email) {
       return res.status(400).send({ message: 'You are already an admin' });
     }
+    if (user.status === 'pending') {
+      return res.status(400).send({ message: 'This user has not activated the account yet' });
+    }
     if (user.isAdmin) {
       return res.status(400).send({ message: 'This user is already an admin' });
     }

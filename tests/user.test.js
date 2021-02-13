@@ -353,6 +353,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     await request(app)
       .get(`/users/${user._id}/verify-account/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.9')
       .expect(302)
       .expect('Location', process.env.FRONTEND_URL);
 
@@ -379,6 +380,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     await request(app)
       .get(`/users/${user._id}/verify-account/${verificationCode[1].code}`)
+      .set('X-Forwarded-For', '192.168.2.10')
       .expect(400);
 
     const newUser = await User.findById(user._id).lean();
@@ -396,6 +398,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const { body } = await request(app)
       .get(`/users/${user._id}/verify-account/incorrectCode`)
+      .set('X-Forwarded-For', '192.168.2.11')
       .expect(400);
 
     expect(body).toEqual({
@@ -420,6 +423,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const { body } = await request(app)
       .get(`/users/${new mongoose.Types.ObjectId()}/verify-account/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.12')
       .expect(400);
 
     expect(body).toEqual({
@@ -452,6 +456,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const { body } = await request(app)
       .get(`/users/${user._id}/verify-account/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.13')
       .expect(400);
 
     expect(body).toEqual({
@@ -1188,6 +1193,18 @@ describe('PATCH /users/add-admin', () => {
 
     expect(body).toEqual({
       message: 'You are already an admin',
+    });
+  });
+
+  test('Should get 400 when trying to make user with status pending an admin', async () => {
+    const { body } = await request(app)
+      .patch('/users/add-admin')
+      .set('Cookie', [`token=${userThree.tokens[0].token}`])
+      .send({ email: userFour.email })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'This user has not activated the account yet',
     });
   });
 

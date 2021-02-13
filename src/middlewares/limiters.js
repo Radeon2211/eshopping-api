@@ -13,7 +13,7 @@ const unlessGetPhoto = (middleware) => async (req, res, next) => {
 
 const unlessPhotoConfig = rateLimit({
   windowMs: 30 * 1000,
-  max: 30,
+  max: 40,
   message: {
     message: 'Too many requests, please wait up to 30 seconds',
   },
@@ -23,7 +23,7 @@ const unlessPhotoLimiter = unlessGetPhoto(unlessPhotoConfig);
 
 const photoLimiter = rateLimit({
   windowMs: 30 * 1000,
-  max: 100,
+  max: 150,
   message: {
     message: 'Too many requests, please wait up to 30 seconds',
   },
@@ -31,7 +31,7 @@ const photoLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 30 * 60 * 1000,
-  max: process.env.MODE === 'development' ? 100 : 7,
+  max: process.env.MODE === 'development' ? 100 : 8,
   message: {
     message: 'Too many failed login attemps, please wait up to 30 minutes',
   },
@@ -39,36 +39,36 @@ const loginLimiter = rateLimit({
 });
 
 const signupLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000,
-  max: process.env.MODE === 'development' ? 100 : 2,
+  windowMs: 40 * 60 * 1000,
+  max: process.env.MODE === 'development' ? 100 : 4,
   message: {
-    message: 'Too many signup attemps, please wait up to 30 minutes',
+    message: 'Too many signup attemps, please wait up to 40 minutes',
   },
   skipFailedRequests: true,
 });
 
 const accountVerificationEmailLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: process.env.MODE === 'development' ? 100 : 2,
+  windowMs: 15 * 60 * 1000,
+  max: process.env.MODE === 'development' ? 100 : 3,
   message: {
-    message: 'Too many requests for sending verification email, please wait up to 10 minutes',
+    message: 'Too many requests for sending verification email, please wait up to 15 minutes',
   },
   skipFailedRequests: true,
 });
 
 const verificationLinkLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: process.env.MODE === 'development' ? 100 : 5,
+  max: process.env.MODE === 'development' ? 100 : 4,
   message: {
     message: 'Too many requests for account verification, please wait up to 10 minutes',
   },
 });
 
 const resetPasswordRequestLimiter = rateLimit({
-  windowMs: 20 * 60 * 1000,
-  max: process.env.MODE === 'development' ? 100 : 2,
+  windowMs: 25 * 60 * 1000,
+  max: process.env.MODE === 'development' ? 100 : 4,
   message: {
-    message: 'Too many requests for password reset, please wait up to 20 minutes',
+    message: 'Too many requests for password reset, please wait up to 25 minutes',
   },
   skipFailedRequests: true,
 });
