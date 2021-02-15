@@ -175,7 +175,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
   throw new MyError('You entered incorrect credentials');
 };
 
-userSchema.methods.generateVerificationCode = async function (type) {
+userSchema.methods.generateVerificationCode = async function (type, newEmail) {
   const user = this;
   const randomCode = uuidv4();
 
@@ -183,13 +183,24 @@ userSchema.methods.generateVerificationCode = async function (type) {
     email: user.email,
     code: randomCode,
     type,
+    newEmail: newEmail || undefined,
   });
   await verificationCode.save();
 
-  const verificationLink =
-    type === verificationCodeTypes.ACCOUNT_VERIFICATION
-      ? `${process.env.API_URL}/users/${user._id}/verify-account/${randomCode}`
-      : `${process.env.API_URL}/users/${user._id}/reset-password/${randomCode}`;
+  let verificationLink = '';
+  switch (type) {
+    case verificationCodeTypes.ACCOUNT_ACTIVATION:
+      verificationLink = `${process.env.API_URL}/users/${user._id}/verify-account/${randomCode}`;
+      break;
+    case verificationCodeTypes.RESET_PASSWORD:
+      verificationLink = `${process.env.API_URL}/users/${user._id}/reset-password/${randomCode}`;
+      break;
+    case verificationCodeTypes.CHANGE_EMAIL:
+      verificationLink = `${process.env.API_URL}/users/${user._id}/change-email/${randomCode}`;
+      break;
+    default:
+      return '';
+  }
   return verificationLink;
 };
 

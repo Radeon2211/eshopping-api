@@ -255,3 +255,48 @@ describe('resetPasswordRequestLimiter', () => {
     }
   });
 });
+
+describe('changeEmailRequestLimiter', () => {
+  it('Should get 429 after more than 3 successful requests', async () => {
+    for (let i = 0; i < 3; i += 1) {
+      await request(app)
+        .patch('/users/me/email')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .set('X-Forwarded-For', '192.168.1.12')
+        .send({
+          currentPassword: userOne.password,
+          email: 'newemail@domain.com',
+        })
+        .expect(200);
+    }
+
+    const { body } = await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.1.12')
+      .send({ email: userOne.email })
+      .expect(429);
+
+    expect(body).toEqual({
+      message: 'Too many requests for email address change, please wait up to 30 minutes',
+    });
+  });
+
+  it('Should NOT get 429 after more than 3 failed requests', async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const { body } = await request(app)
+        .patch('/users/me/email')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .set('X-Forwarded-For', '192.168.1.13')
+        .send({
+          currentPassword: 'incorrectPassword',
+          email: userOne.email,
+        })
+        .expect(400);
+
+      expect(body).toEqual({
+        message: 'Current password is incorrect',
+      });
+    }
+  });
+});

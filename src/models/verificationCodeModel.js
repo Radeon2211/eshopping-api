@@ -23,12 +23,27 @@ const verificationCodeSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: [verificationCodeTypes.ACCOUNT_VERIFICATION, verificationCodeTypes.RESET_PASSWORD],
+      enum: [
+        verificationCodeTypes.ACCOUNT_ACTIVATION,
+        verificationCodeTypes.RESET_PASSWORD,
+        verificationCodeTypes.CHANGE_EMAIL,
+      ],
     },
     expireAt: {
       type: Date,
       default: Date.now,
       expires: 10 * 60,
+    },
+    newEmail: {
+      type: String,
+      trim: true,
+      unique: false,
+      lowercase: true,
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error(`Secret code's email is invalid`);
+        }
+      },
     },
   },
   {

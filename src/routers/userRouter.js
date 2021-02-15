@@ -4,7 +4,6 @@ const { ObjectID } = require('mongodb');
 const generatePassword = require('generate-password');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
-const VerificationCode = require('../models/verificationCodeModel');
 const { authPending, authActive } = require('../middlewares/auth');
 const {
   loginLimiter,
@@ -12,17 +11,24 @@ const {
   accountVerificationEmailLimiter,
   verificationLinkLimiter,
   resetPasswordRequestLimiter,
+  changeEmailLimiter,
 } = require('../middlewares/limiters');
 const {
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,
   verificationCodeTypes,
 } = require('../shared/constants');
-const { updateUserCart, verifyItemsToTransaction, getFullUser } = require('../shared/utility');
+const {
+  updateUserCart,
+  verifyItemsToTransaction,
+  getFullUser,
+  verificationCodeChecker,
+} = require('../shared/utility');
 const {
   sendAccountVerificationEmail,
   sendResetPasswordVerificationEmail,
   sendNewPasswordEmail,
+  sendChangeEmailVerificationEmail,
 } = require('../emails/account');
 
 const router = new express.Router();
@@ -41,7 +47,7 @@ router.post('/users', signupLimiter, async (req, res) => {
     await user.save();
 
     const verificationLink = await user.generateVerificationCode(
-      verificationCodeTypes.ACCOUNT_VERIFICATION,
+      verificationCodeTypes.ACCOUNT_ACTIVATION,
     );
     if (process.env.MODE !== 'testing') {
       await sendAccountVerificationEmail(user.email, user.username, verificationLink);
@@ -105,7 +111,7 @@ router.post(
       }
 
       const verificationLink = await req.user.generateVerificationCode(
-        verificationCodeTypes.ACCOUNT_VERIFICATION,
+        verificationCodeTypes.ACCOUNT_ACTIVATION,
       );
       if (process.env.MODE !== 'testing') {
         await sendAccountVerificationEmail(req.user.email, req.user.username, verificationLink);
@@ -120,26 +126,10 @@ router.post(
 
 router.get('/users/:id/verify-account/:code', verificationLinkLimiter, async (req, res) => {
   try {
-    let isError = false;
-    const verificationCode = await VerificationCode.findOne({
+    const { isError, user, verificationCode } = await verificationCodeChecker(req.params.id, {
       code: req.params.code,
-      type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+      type: verificationCodeTypes.ACCOUNT_ACTIVATION,
     });
-    if (!verificationCode) {
-      isError = true;
-    }
-
-    let user = null;
-    if (!isError) {
-      user = await User.findOne({ email: verificationCode.email });
-      if (user) {
-        if (!user._id.equals(req.params.id)) {
-          isError = true;
-        }
-      } else {
-        isError = true;
-      }
-    }
 
     if (isError) {
       return res.status(400).send({
@@ -192,26 +182,10 @@ router.post('/users/request-for-reset-password', resetPasswordRequestLimiter, as
 
 router.get('/users/:id/reset-password/:code', verificationLinkLimiter, async (req, res) => {
   try {
-    let isError = false;
-    const verificationCode = await VerificationCode.findOne({
+    const { isError, user, verificationCode } = await verificationCodeChecker(req.params.id, {
       code: req.params.code,
       type: verificationCodeTypes.RESET_PASSWORD,
     });
-    if (!verificationCode) {
-      isError = true;
-    }
-
-    let user = null;
-    if (!isError) {
-      user = await User.findOne({ email: verificationCode.email });
-      if (user) {
-        if (!user._id.equals(req.params.id)) {
-          isError = true;
-        }
-      } else {
-        isError = true;
-      }
-    }
 
     if (isError) {
       return res.status(400).send({
@@ -269,7 +243,6 @@ router.patch('/users/me', authActive, async (req, res) => {
   try {
     let updates = Object.keys(req.body);
     const allowedUpdates = [
-      'email',
       'password',
       'firstName',
       'lastName',
@@ -280,7 +253,7 @@ router.patch('/users/me', authActive, async (req, res) => {
       'phone',
       'contacts',
     ];
-    if (updates.includes('email') || updates.includes('password')) {
+    if (updates.includes('password')) {
       updates = await req.user.checkCurrentCredentials(updates, req.body);
     }
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -294,6 +267,56 @@ router.patch('/users/me', authActive, async (req, res) => {
     await updateUserCart(req.user, req.user.cart);
     const user = await getFullUser(req.user._id);
     res.send({ user });
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).send(err);
+    }
+    res.status(500).send(err);
+  }
+});
+
+router.patch('/users/me/email', changeEmailLimiter, authActive, async (req, res) => {
+  try {
+    await req.user.checkCurrentCredentials(['email'], req.body);
+    const userWithGivenEmail = await User.findOne({ email: req.body.email });
+    if (userWithGivenEmail) {
+      return res.status(409).send({ message: 'Given email is already taken' });
+    }
+    const verificationLink = await req.user.generateVerificationCode(
+      verificationCodeTypes.CHANGE_EMAIL,
+      req.body.email,
+    );
+    if (process.env.MODE !== 'testing') {
+      await sendChangeEmailVerificationEmail(req.body.email, verificationLink);
+    }
+    res.send();
+  } catch (err) {
+    if (err.message) {
+      return res.status(400).send(err);
+    }
+    res.status(500).send(err);
+  }
+});
+
+router.get('/users/:id/change-email/:code', verificationLinkLimiter, async (req, res) => {
+  try {
+    const { isError, user, verificationCode } = await verificationCodeChecker(req.params.id, {
+      code: req.params.code,
+      type: verificationCodeTypes.CHANGE_EMAIL,
+    });
+
+    if (isError) {
+      return res.status(400).send({
+        message:
+          'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+      });
+    }
+
+    user.email = verificationCode.newEmail;
+    await user.save();
+    await verificationCode.remove();
+
+    res.redirect(process.env.FRONTEND_URL);
   } catch (err) {
     if (err.message) {
       return res.status(400).send(err);

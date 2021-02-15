@@ -1,5 +1,6 @@
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
+const VerificationCode = require('../models/verificationCodeModel');
 const { SELLER_USERNAME_POPULATE, CART_POPULATE } = require('./constants');
 
 const createSortObject = (req) => {
@@ -195,6 +196,28 @@ const splitOrderProducts = (products) => {
   return sellersArray;
 };
 
+const verificationCodeChecker = async (userId, codeQueryParams) => {
+  let isError = false;
+  const verificationCode = await VerificationCode.findOne(codeQueryParams);
+  if (!verificationCode) {
+    isError = true;
+  }
+
+  let user = null;
+  if (!isError) {
+    user = await User.findOne({ email: verificationCode.email });
+    if (user) {
+      if (!user._id.equals(userId)) {
+        isError = true;
+      }
+    } else {
+      isError = true;
+    }
+  }
+
+  return { isError, user, verificationCode };
+};
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
@@ -208,4 +231,5 @@ module.exports = {
   getOrderProduct,
   verifyItemsToBuy,
   splitOrderProducts,
+  verificationCodeChecker,
 };

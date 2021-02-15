@@ -55,13 +55,12 @@ describe('POST /users', () => {
     expect(newUser).not.toBeNull();
 
     const verificationCodes = await VerificationCode.find().lean();
-    expect(verificationCodes).toHaveLength(1);
     expect(verificationCodes).toEqual([
       {
         _id: verificationCodes[0]._id,
         email: 'jsmith@domain.com',
         code: verificationCodes[0].code,
-        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        type: verificationCodeTypes.ACCOUNT_ACTIVATION,
         expireAt: verificationCodes[0].expireAt,
       },
     ]);
@@ -302,14 +301,14 @@ describe('POST /users/send-account-verification-email', () => {
         _id: verificationCodes[0]._id,
         email: 'jsmith@domain.com',
         code: verificationCodes[0].code,
-        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        type: verificationCodeTypes.ACCOUNT_ACTIVATION,
         expireAt: verificationCodes[0].expireAt,
       },
       {
         _id: verificationCodes[1]._id,
         email: 'jsmith@domain.com',
         code: verificationCodes[1].code,
-        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        type: verificationCodeTypes.ACCOUNT_ACTIVATION,
         expireAt: verificationCodes[1].expireAt,
       },
     ]);
@@ -359,6 +358,9 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const newUser = await User.findById(user._id).lean();
     expect(newUser.status).toEqual('active');
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
   });
 
   test('Should NOT verify account of freshly created user if type of verification code is incorrect', async () => {
@@ -385,6 +387,9 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const newUser = await User.findById(user._id).lean();
     expect(newUser.status).toEqual('pending');
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(2);
   });
 
   test('Should NOT verify account if verification code is incorrect', async () => {
@@ -408,6 +413,9 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const newUser = await User.findById(user._id).lean();
     expect(newUser.status).toEqual('pending');
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
   });
 
   test(`Should NOT verify account if passed user id does not match to user's id whose email is in verification code record`, async () => {
@@ -433,6 +441,9 @@ describe('GET /users/:id/verify-account/:code', () => {
 
     const newUser = await User.findById(user._id).lean();
     expect(newUser.status).toEqual('pending');
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
   });
 
   test('Should NOT verify account if user does not exist', async () => {
@@ -463,6 +474,9 @@ describe('GET /users/:id/verify-account/:code', () => {
       message:
         'Verification link has been expired or you are not allowed to perform this action or your account already does not exist',
     });
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
   });
 });
 
@@ -554,6 +568,9 @@ describe('GET /users/:id/reset-password/:code', () => {
     const userAfter = await User.findById(userOne._id).lean();
     const isPasswordStillTheSame = await bcrypt.compare(userOne.password, userAfter.password);
     expect(isPasswordStillTheSame).toEqual(false);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
   });
 
   test('Should NOT reset password if type of verification code is incorrect', async () => {
@@ -581,18 +598,21 @@ describe('GET /users/:id/reset-password/:code', () => {
     const newUser = await User.findById(user._id).lean();
     const isPasswordStillTheSame = await bcrypt.compare(userOne.password, newUser.password);
     expect(isPasswordStillTheSame).toEqual(true);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(2);
   });
 
-  test('Should NOT verify account if verification code is incorrect', async () => {
+  test('Should NOT reset password if verification code is incorrect', async () => {
     await request(app)
       .post('/users/request-for-reset-password')
-      .set('X-Forwarded-For', '192.168.2.25')
+      .set('X-Forwarded-For', '192.168.2.20')
       .send({ email: userOne.email })
       .expect(200);
 
     const { body } = await request(app)
       .get(`/users/${userOne._id}/reset-password/incorrectCode`)
-      .set('X-Forwarded-For', '192.168.2.25')
+      .set('X-Forwarded-For', '192.168.2.20')
       .expect(400);
 
     expect(body).toEqual({
@@ -603,6 +623,9 @@ describe('GET /users/:id/reset-password/:code', () => {
     const userAfter = await User.findById(userOne._id).lean();
     const isPasswordStillTheSame = await bcrypt.compare(userOne.password, userAfter.password);
     expect(isPasswordStillTheSame).toEqual(true);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
   });
 
   test(`Should NOT reset password if passed user id does not match to user's id whose email is in verification code record`, async () => {
@@ -629,6 +652,9 @@ describe('GET /users/:id/reset-password/:code', () => {
     const newUser = await User.findById(user._id).lean();
     const isPasswordStillTheSame = await bcrypt.compare(userOne.password, newUser.password);
     expect(isPasswordStillTheSame).toEqual(true);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
   });
 
   test('Should NOT reset password if user does not exist', async () => {
@@ -662,6 +688,9 @@ describe('GET /users/:id/reset-password/:code', () => {
 
     const userAfter = await User.findById(user._id).lean();
     expect(userAfter).toBeNull();
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
   });
 });
 
@@ -783,7 +812,7 @@ describe('GET /users/:username', () => {
 });
 
 describe('PATCH /users/me', () => {
-  describe('Everything expect password and email', () => {
+  describe('Everything expect password', () => {
     test('Should update everything what is possible and get full updated user', async () => {
       const updates = {
         firstName: 'firstName',
@@ -797,7 +826,6 @@ describe('PATCH /users/me', () => {
           email: false,
           phone: true,
         },
-        email: 'newemail@domain.com',
         password: 'newPassword',
         currentPassword: userOne.password,
       };
@@ -819,6 +847,7 @@ describe('PATCH /users/me', () => {
       expect(user).toEqual({
         _id: userOne._id.toJSON(),
         ...updatesToCompare,
+        email: userOne.email,
         username: userOne.username,
         status: userOne.status,
         createdAt: user.createdAt,
@@ -926,6 +955,23 @@ describe('PATCH /users/me', () => {
       });
     });
 
+    test('Should NOT update email', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          email: 'newemail@domain.com',
+        })
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.email).toEqual(userOne.email);
+
+      expect(body).toEqual({
+        message: `You can't change these data`,
+      });
+    });
+
     test('Should NOT update createdAt', async () => {
       const newCreatedAt = '2020-11-11T11:11:11.911Z';
 
@@ -1014,7 +1060,7 @@ describe('PATCH /users/me', () => {
     });
   });
 
-  describe('Password and email', () => {
+  describe('Password', () => {
     test('Should update password if currentPassword is correct and new password is different', async () => {
       const newPassword = 'newPassword';
 
@@ -1046,20 +1092,6 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update email without current password', async () => {
-      const { body } = await request(app)
-        .patch('/users/me')
-        .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .send({
-          email: 'newemail@domain.com',
-        })
-        .expect(400);
-
-      expect(body).toEqual({
-        message: 'You must provide current password',
-      });
-    });
-
     test('Should NOT update password if current password is invalid', async () => {
       const { body } = await request(app)
         .patch('/users/me')
@@ -1067,21 +1099,6 @@ describe('PATCH /users/me', () => {
         .send({
           currentPassword: 'incorrentPassword',
           password: 'newPassword',
-        })
-        .expect(400);
-
-      expect(body).toEqual({
-        message: 'Current password is incorrect',
-      });
-    });
-
-    test('Should NOT update email if current password is invalid', async () => {
-      const { body } = await request(app)
-        .patch('/users/me')
-        .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .send({
-          currentPassword: 'incorrentPassword',
-          email: 'newemail@domain.com',
         })
         .expect(400);
 
@@ -1102,21 +1119,6 @@ describe('PATCH /users/me', () => {
 
       expect(body).toEqual({
         message: 'New password is the same as current password',
-      });
-    });
-
-    test('Should NOT update email if new email is the same as current email', async () => {
-      const { body } = await request(app)
-        .patch('/users/me')
-        .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .send({
-          currentPassword: userOne.password,
-          email: userOne.email,
-        })
-        .expect(400);
-
-      expect(body).toEqual({
-        message: 'New email is the same as current email',
       });
     });
   });
@@ -1142,6 +1144,301 @@ describe('PATCH /users/me', () => {
         message: 'This route is blocked for you',
       });
     });
+  });
+});
+
+describe('PATCH /users/me/email', () => {
+  test('Should generate verification code if current password is correct and new email is unique', async () => {
+    const newEmail = 'newemail@domain.com';
+    await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.23')
+      .send({
+        currentPassword: userOne.password,
+        email: newEmail,
+      })
+      .expect(200);
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toEqual([
+      {
+        _id: verificationCodes[0]._id,
+        email: userOne.email,
+        code: verificationCodes[0].code,
+        type: verificationCodeTypes.CHANGE_EMAIL,
+        expireAt: verificationCodes[0].expireAt,
+        newEmail,
+      },
+    ]);
+    expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
+  });
+
+  test('Should NOT generate verification code if new email is not unique', async () => {
+    const { body } = await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.24')
+      .send({
+        currentPassword: userOne.password,
+        email: userTwo.email,
+      })
+      .expect(409);
+
+    expect(body).toEqual({
+      message: 'Given email is already taken',
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  test('Should NOT generate verification code if new email is the same as current email', async () => {
+    const { body } = await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.25')
+      .send({
+        currentPassword: userOne.password,
+        email: userOne.email,
+      })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'New email is the same as current email',
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  test('Should NOT generate verification code if incorrect current password is given', async () => {
+    const { body } = await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.26')
+      .send({
+        currentPassword: 'incorrectPassword',
+        email: 'newemail@domain.com',
+      })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'Current password is incorrect',
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  test('Should NOT generate verification code if current password is not given', async () => {
+    const { body } = await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.27')
+      .send({
+        email: 'newemail@domain.com',
+      })
+      .expect(400);
+
+    expect(body).toEqual({
+      message: 'You must provide current password',
+    });
+
+    const verificationCodes = await VerificationCode.find().lean();
+    expect(verificationCodes).toHaveLength(0);
+  });
+
+  describe('User unauthenticated or with status pending', () => {
+    test('Should get 401 if user has status pending', async () => {
+      const { body } = await request(app)
+        .patch('/users/me/email')
+        .set('Cookie', [`token=${userFour.tokens[0].token}`])
+        .set('X-Forwarded-For', '192.168.2.28')
+        .send({
+          currentPassword: userFour.password,
+          email: 'newemail@domain.com',
+        })
+        .expect(401);
+
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
+      });
+    });
+
+    test('Should get 401 if user is unauthenticated', async () => {
+      const { body } = await request(app)
+        .patch('/users/me/email')
+        .set('X-Forwarded-For', '192.168.2.29')
+        .send({
+          currentPassword: userOne.password,
+          email: 'newemail@domain.com',
+        })
+        .expect(401);
+
+      expect(body).toEqual({
+        message: 'This route is blocked for you',
+      });
+    });
+  });
+});
+
+describe('GET /users/:id/change-email/:code', () => {
+  test('Should change email', async () => {
+    const newEmail = 'newemail@domain.com';
+    await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.30')
+      .send({
+        currentPassword: userOne.password,
+        email: newEmail,
+      })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.findOne({ email: userOne.email }).lean();
+
+    await request(app)
+      .get(`/users/${userOne._id}/change-email/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.30')
+      .expect(302)
+      .expect('Location', process.env.FRONTEND_URL);
+
+    const userAfter = await User.findById(userOne._id).lean();
+    expect(userAfter.email).toEqual(newEmail);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
+  });
+
+  test('Should NOT change email if verification code is incorrect', async () => {
+    await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.31')
+      .send({
+        currentPassword: userOne.password,
+        email: 'newemail@domain.com',
+      })
+      .expect(200);
+
+    const { body } = await request(app)
+      .get(`/users/${userOne._id}/change-email/incorrectCode`)
+      .set('X-Forwarded-For', '192.168.2.31')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const userAfter = await User.findById(userOne._id).lean();
+    expect(userAfter.email).toEqual(userOne.email);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
+  });
+
+  test('Should NOT change email if type of verification code is incorrect', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.32')
+      .send(newUserData)
+      .expect(201);
+
+    await request(app)
+      .post('/users/request-for-reset-password')
+      .set('X-Forwarded-For', '192.168.2.32')
+      .send({ email: user.email })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.find({ email: user.email }).lean();
+
+    await request(app)
+      .get(`/users/${user._id}/change-email/${verificationCode[0].code}`)
+      .set('X-Forwarded-For', '192.168.2.32')
+      .expect(400);
+
+    const newUser = await User.findById(user._id).lean();
+    expect(newUser.email).toEqual(user.email);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(2);
+  });
+
+  test(`Should NOT change email if passed user id does not match to user's id whose email is in verification code record`, async () => {
+    await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.33')
+      .send({
+        currentPassword: userOne.password,
+        email: 'newemail@domain.com',
+      })
+      .expect(200);
+
+    const verificationCode = await VerificationCode.findOne({ email: userOne.email }).lean();
+
+    const { body } = await request(app)
+      .get(`/users/${new mongoose.Types.ObjectId()}/reset-password/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.33')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const userAfter = await User.findById(userOne).lean();
+    expect(userAfter.email).toEqual(userOne.email);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(1);
+  });
+
+  test('Should NOT change email if user does not exist', async () => {
+    const {
+      body: { user },
+    } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.34')
+      .send(newUserData)
+      .expect(201);
+
+    const newUserBefore = await User.findById(user._id).lean();
+
+    const verificationCode = await VerificationCode.findOne({ email: user.email }).lean();
+
+    await request(app)
+      .delete('/users/me')
+      .set('Cookie', [`token=${newUserBefore.tokens[0].token}`])
+      .send({ currentPassword: newUserData.password })
+      .expect(200);
+
+    await request(app)
+      .patch('/users/me/email')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .set('X-Forwarded-For', '192.168.2.34')
+      .send({
+        currentPassword: userOne.password,
+        email: 'newemail@domain.com',
+      })
+      .expect(200);
+
+    const { body } = await request(app)
+      .get(`/users/${user._id}/change-email/${verificationCode.code}`)
+      .set('X-Forwarded-For', '192.168.2.34')
+      .expect(400);
+
+    expect(body).toEqual({
+      message:
+        'Verification link has been expired or you are not allowed to perform this action or account does not exist',
+    });
+
+    const userAfter = await User.findById(user._id).lean();
+    expect(userAfter).toBeNull();
   });
 });
 
@@ -1343,7 +1640,7 @@ describe('DELETE /users/me', () => {
       body: { user },
     } = await request(app)
       .post('/users')
-      .set('X-Forwarded-For', '192.168.2.23')
+      .set('X-Forwarded-For', '192.168.2.35')
       .send(newUserData)
       .expect(201);
 
@@ -1403,10 +1700,10 @@ describe('DELETE /users/me', () => {
 });
 
 describe('generateVerificationCode()', () => {
-  test('Should create correct verification code return correct verification link (type ACCOUNT_VERIFICATION)', async () => {
+  test('Should create correct verification code return correct verification link (type ACCOUNT_ACTIVATION)', async () => {
     const user = await User.findById(userOne._id);
     const verificationLink = await user.generateVerificationCode(
-      verificationCodeTypes.ACCOUNT_VERIFICATION,
+      verificationCodeTypes.ACCOUNT_ACTIVATION,
     );
 
     const verificationCodes = await VerificationCode.find().lean();
@@ -1416,7 +1713,7 @@ describe('generateVerificationCode()', () => {
         _id: verificationCodes[0]._id,
         email: userOne.email,
         code: verificationCodes[0].code,
-        type: verificationCodeTypes.ACCOUNT_VERIFICATION,
+        type: verificationCodeTypes.ACCOUNT_ACTIVATION,
         expireAt: verificationCodes[0].expireAt,
       },
     ]);
@@ -1456,7 +1753,7 @@ describe('Agenda - remove expired users', () => {
   test('Should delete users with status pending and createdAt at least 1 hour earlier', async () => {
     const response1 = await request(app)
       .post('/users')
-      .set('X-Forwarded-For', '192.168.2.24')
+      .set('X-Forwarded-For', '192.168.2.36')
       .send({
         ...newUserData,
         username: 'jsmith1',
@@ -1466,7 +1763,7 @@ describe('Agenda - remove expired users', () => {
 
     const response2 = await request(app)
       .post('/users')
-      .set('X-Forwarded-For', '192.168.2.24')
+      .set('X-Forwarded-For', '192.168.2.36')
       .send({
         ...newUserData,
         username: 'jsmith2',

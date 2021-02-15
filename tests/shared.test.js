@@ -1,9 +1,11 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+const validateUUID = require('uuid-validate');
 const app = require('../src/app');
 const Product = require('../src/models/productModel');
 const Order = require('../src/models/orderModel');
 const User = require('../src/models/userModel');
+const VerificationCode = require('../src/models/verificationCodeModel');
 const {
   userOne,
   userTwo,
@@ -21,6 +23,7 @@ const {
   ORDER_SELLER_POPULATE,
   CART_POPULATE,
   MyError,
+  verificationCodeTypes,
 } = require('../src/shared/constants');
 const {
   createSortObject,
@@ -35,6 +38,7 @@ const {
   getOrderProduct,
   verifyItemsToBuy,
   splitOrderProducts,
+  verificationCodeChecker,
 } = require('../src/shared/utility');
 
 beforeEach(setupDatabase);
@@ -962,6 +966,45 @@ describe('Utility', () => {
           ],
         },
       ]);
+    });
+  });
+
+  describe('verificationCodeChecker()', () => {
+    test('Should return isError false, correct user and verification code', async () => {
+      await request(app)
+        .post('/users/request-for-reset-password')
+        .set('X-Forwarded-For', '192.168.3.1')
+        .send({ email: userOne.email })
+        .expect(200);
+
+      const { _id: codeId, code } = await VerificationCode.findOne({ email: userOne.email }).lean();
+
+      const { isError, user, verificationCode } = await verificationCodeChecker(
+        userOne._id.toString(),
+        {
+          code,
+          type: verificationCodeTypes.RESET_PASSWORD,
+        },
+      );
+
+      expect(isError).toEqual(false);
+      expect(user._id).toEqual(userOne._id);
+      expect(verificationCode._id).toEqual(codeId);
+      expect(validateUUID(verificationCode.code, 4)).toEqual(true);
+    });
+
+    test('Should return isError true, user null and verification code null if any code does not exist', async () => {
+      const { isError, user, verificationCode } = await verificationCodeChecker(
+        userOne._id.toString(),
+        {
+          code: 'code',
+          type: verificationCodeTypes.RESET_PASSWORD,
+        },
+      );
+
+      expect(isError).toEqual(true);
+      expect(user).toEqual(null);
+      expect(verificationCode).toEqual(null);
     });
   });
 });

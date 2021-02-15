@@ -73,6 +73,15 @@ const resetPasswordRequestLimiter = rateLimit({
   skipFailedRequests: true,
 });
 
+const changeEmailLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000,
+  max: process.env.MODE === 'development' ? 100 : 3,
+  message: {
+    message: 'Too many requests for email address change, please wait up to 30 minutes',
+  },
+  skipFailedRequests: true,
+});
+
 module.exports = {
   unlessGetPhoto,
   unlessPhotoLimiter,
@@ -82,4 +91,5 @@ module.exports = {
   accountVerificationEmailLimiter,
   verificationLinkLimiter,
   resetPasswordRequestLimiter,
+  changeEmailLimiter,
 };

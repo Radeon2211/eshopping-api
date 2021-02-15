@@ -40,8 +40,9 @@ const updateCartActions = {
 const MAX_CART_ITEMS_NUMBER = 50;
 
 const verificationCodeTypes = {
+  ACCOUNT_ACTIVATION: 'ACCOUNT_ACTIVATION',
   RESET_PASSWORD: 'RESET_PASSWORD',
-  ACCOUNT_VERIFICATION: 'ACCOUNT_VERIFICATION',
+  CHANGE_EMAIL: 'CHANGE_EMAIL',
 };
 
 function MyError(message) {
