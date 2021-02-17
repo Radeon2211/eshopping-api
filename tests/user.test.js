@@ -32,7 +32,7 @@ const newUserData = {
   zipCode: '15-950',
   city: 'Białystok',
   country: 'Poland',
-  phone: '123459876',
+  phone: '+48 123459876',
   contacts: {
     email: true,
     phone: false,
@@ -817,7 +817,7 @@ describe('PATCH /users/me', () => {
       const updates = {
         firstName: 'firstName',
         lastName: 'lastName',
-        phone: '987612345',
+        phone: '+48 987612345',
         street: 'street',
         zipCode: '77-777',
         city: 'city',
@@ -897,7 +897,7 @@ describe('PATCH /users/me', () => {
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
         .expect(200);
 
-      const newPhone = '987612345';
+      const newPhone = '+48 987612345';
 
       const {
         body: { user },
@@ -922,7 +922,7 @@ describe('PATCH /users/me', () => {
         })
         .expect(200);
 
-      const newPhone = '987612345';
+      const newPhone = '+48 987612345';
 
       const {
         body: { user },
@@ -936,6 +936,66 @@ describe('PATCH /users/me', () => {
 
       expect(user.cart).toHaveLength(2);
       expect(user.cart[1].quantity).toEqual(40);
+    });
+
+    test('Should NOT update phone if it has not prefix', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          phone: '987612345',
+        })
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.phone).toEqual(userOne.phone);
+
+      expect(body.errors.phone.message).toEqual('Enter valid phone number');
+    });
+
+    test('Should NOT update phone if it has too long prefix', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          phone: '+12345 987612345',
+        })
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.phone).toEqual(userOne.phone);
+
+      expect(body.errors.phone.message).toEqual('Enter valid phone number');
+    });
+
+    test('Should NOT update phone if it has too long phone number (second part)', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          phone: '+1 1234567891234567',
+        })
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.phone).toEqual(userOne.phone);
+
+      expect(body.errors.phone.message).toEqual('Enter valid phone number');
+    });
+
+    test('Should NOT update phone if it has too short phone number (second part)', async () => {
+      const { body } = await request(app)
+        .patch('/users/me')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          phone: '+1234 1234',
+        })
+        .expect(400);
+
+      const user = await User.findById(userOne._id).lean();
+      expect(user.phone).toEqual(userOne.phone);
+
+      expect(body.errors.phone.message).toEqual('Enter valid phone number');
     });
 
     test('Should NOT update username', async () => {

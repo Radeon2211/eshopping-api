@@ -105,7 +105,7 @@ describe('signupLimiter', () => {
       zipCode: '15-950',
       city: 'Białystok',
       country: 'Poland',
-      phone: '123459876',
+      phone: '+48 123459876',
       contacts: {
         email: true,
         phone: false,
@@ -142,7 +142,7 @@ describe('signupLimiter', () => {
       zipCode: '15-950',
       city: 'Białystok',
       country: 'Poland',
-      phone: '123459876',
+      phone: '+48 123459876',
       contacts: {
         email: true,
         phone: false,

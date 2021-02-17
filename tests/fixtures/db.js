@@ -36,7 +36,7 @@ const userOne = {
   zipCode: '15-950',
   city: 'Białystok',
   country: 'Poland',
-  phone: '123456789',
+  phone: '+48 123456789',
   contacts: {
     email: true,
     phone: true,
@@ -73,7 +73,7 @@ const userTwo = {
   zipCode: '15-950',
   city: 'Białystok',
   country: 'Poland',
-  phone: '987654321',
+  phone: '+48 987654321',
   contacts: {
     email: false,
     phone: false,
@@ -105,7 +105,7 @@ const userThree = {
   zipCode: '15-950',
   city: 'Białystok',
   country: 'Poland',
-  phone: '123456789',
+  phone: '+48 123456789',
   contacts: {
     email: true,
     phone: true,
@@ -138,7 +138,7 @@ const userFour = {
   zipCode: '15-950',
   city: 'Białystok',
   country: 'Poland',
-  phone: '123456789',
+  phone: '+48 123456789',
   contacts: {
     email: true,
     phone: true,

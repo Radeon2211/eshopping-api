@@ -93,6 +93,16 @@ const DELIVERY_ADDRESS = {
   phone: {
     type: String,
     required: true,
+    trim: true,
+    minlength: 8,
+    maxlength: 21,
+    validate(value) {
+      const pattern = /^\+[0-9]{1,4} [\d-]{5,15}$/;
+      const isValid = value.match(pattern);
+      if (!isValid) {
+        throw new Error('Enter valid phone number');
+      }
+    },
   },
 };
 
