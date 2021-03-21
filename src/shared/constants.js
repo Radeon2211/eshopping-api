@@ -26,6 +26,12 @@ const pages = {
   USER_PRODUCTS: 'USER_PRODUCTS',
 };
 
+const productConditions = {
+  NEW: 'new',
+  USED: 'used',
+  NOT_APPLICABLE: 'not_applicable',
+};
+
 const orderTypes = {
   PLACED_ORDERS: 'PLACED_ORDERS',
   SELL_HISTORY: 'SELL_HISTORY',
@@ -112,6 +118,7 @@ module.exports = {
   ORDER_SELLER_POPULATE,
   CART_POPULATE,
   pages,
+  productConditions,
   orderTypes,
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,

@@ -4,6 +4,7 @@ const User = require('../../src/models/userModel');
 const Product = require('../../src/models/productModel');
 const Order = require('../../src/models/orderModel');
 const VerificationCode = require('../../src/models/verificationCodeModel');
+const { productConditions } = require('../../src/shared/constants');
 
 const userOneId = new mongoose.Types.ObjectId();
 const userTwoId = new mongoose.Types.ObjectId();
@@ -160,7 +161,7 @@ const productOne = {
   price: 0.5,
   quantity: 1000,
   seller: userOneId,
-  condition: 'not_applicable',
+  condition: productConditions.NOT_APPLICABLE,
 };
 
 const productTwo = {
@@ -168,7 +169,7 @@ const productTwo = {
   name: 'Knife for cutting mushrooms',
   description: 'Thanks to this knife you will be able to collect mushrooms super fastly',
   price: 12,
-  condition: 'new',
+  condition: productConditions.NEW,
   quantity: 3,
   seller: userTwoId,
 };
@@ -178,7 +179,7 @@ const productThree = {
   name: 'Wellingtons',
   description: 'Wellingtons that are waterproof and super cool for collecting mushrooms',
   price: 30,
-  condition: 'new',
+  condition: productConditions.NEW,
   quantity: 1,
   seller: userTwoId,
 };
@@ -188,7 +189,7 @@ const productFour = {
   name: 'Bucket',
   description: 'Big bucket for collecting mushrooms',
   price: 20,
-  condition: 'used',
+  condition: productConditions.USED,
   quantity: 50,
   seller: userThreeId,
 };

@@ -16,7 +16,7 @@ const {
   productFour,
   setupDatabase,
 } = require('./fixtures/db');
-const { pages } = require('../src/shared/constants');
+const { pages, productConditions } = require('../src/shared/constants');
 
 const allProducts = [productOne, productTwo, productThree, productFour];
 const allProductsPrices = allProducts.map(({ price }) => price);
@@ -40,7 +40,7 @@ describe('POST /products', () => {
       description: 'Healthy mega mushrooms',
       price: 1.5,
       quantity: 1000,
-      condition: 'not_applicable',
+      condition: productConditions.NOT_APPLICABLE,
     };
 
     const {
@@ -72,7 +72,7 @@ describe('POST /products', () => {
       description: 'Healthy mega mushrooms',
       price: 1.5,
       quantity: 1000,
-      condition: 'not_applicable',
+      condition: productConditions.NOT_APPLICABLE,
     };
 
     const { body } = await request(app)
@@ -97,7 +97,7 @@ describe('POST /products', () => {
       description: 'Healthy mega mushrooms',
       price: 1.5,
       quantity: 1000,
-      condition: 'not_applicable',
+      condition: productConditions.NOT_APPLICABLE,
     };
 
     const { body } = await request(app).post('/products').send(data).expect(401);
@@ -197,7 +197,7 @@ describe('GET /products', () => {
           name: 'Product name',
           description: '',
           price: 10,
-          condition: 'new',
+          condition: productConditions.NEW,
           quantity: 1,
           seller: userOne._id,
           quantitySold: 0,
@@ -321,13 +321,15 @@ describe('GET /products', () => {
           maxPrice: defaultMaxPrice,
         },
       ]);
-      expect(products.every((product) => product.condition === 'new')).toEqual(true);
+      expect(products.every((product) => product.condition === productConditions.NEW)).toEqual(
+        true,
+      );
     });
 
     test('should fetch only products with condition "used"', async () => {
       const {
         body: { products, productCount, productPrices },
-      } = await request(app).get('/products?condition=used').expect(200);
+      } = await request(app).get(`/products?condition=${productConditions.USED}`).expect(200);
 
       expect(productCount).toEqual(1);
       expect(productPrices).toEqual([
@@ -337,13 +339,17 @@ describe('GET /products', () => {
           maxPrice: defaultMaxPrice,
         },
       ]);
-      expect(products.every((product) => product.condition === 'used')).toEqual(true);
+      expect(products.every((product) => product.condition === productConditions.USED)).toEqual(
+        true,
+      );
     });
 
     test('should fetch only products with condition "not_applicable"', async () => {
       const {
         body: { products, productCount, productPrices },
-      } = await request(app).get('/products?condition=not_applicable').expect(200);
+      } = await request(app)
+        .get(`/products?condition=${productConditions.NOT_APPLICABLE}`)
+        .expect(200);
 
       expect(productCount).toEqual(1);
       expect(productPrices).toEqual([
@@ -353,7 +359,9 @@ describe('GET /products', () => {
           maxPrice: defaultMaxPrice,
         },
       ]);
-      expect(products.every(({ condition }) => condition === 'not_applicable')).toEqual(true);
+      expect(
+        products.every(({ condition }) => condition === productConditions.NOT_APPLICABLE),
+      ).toEqual(true);
     });
 
     test('should fetch nothing if passed condition is different than "new", "used" and "not_applicable"', async () => {
@@ -749,7 +757,7 @@ describe('PATCH /products/:id', () => {
       description: 'Cool healthy mushrooms',
       price: 2,
       quantity: 55,
-      condition: 'used',
+      condition: productConditions.USED,
     };
 
     const {

@@ -18,7 +18,7 @@ const {
   cartItemTwoId,
   cartItemThreeId,
 } = require('./fixtures/db');
-const { updateCartActions } = require('../src/shared/constants');
+const { updateCartActions, productConditions } = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
 
@@ -351,7 +351,7 @@ describe('PATCH /cart/add', () => {
         name: 'Product name',
         description: '',
         price: 10,
-        condition: 'new',
+        condition: productConditions.NEW,
         quantity: 1,
         seller: userTwo._id,
       };

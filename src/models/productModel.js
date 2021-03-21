@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { productConditions } = require('../shared/constants');
 
 const productSchema = new mongoose.Schema(
   {
@@ -29,7 +30,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ['new', 'used', 'not_applicable'],
+      enum: [productConditions.NEW, productConditions.USED, productConditions.NOT_APPLICABLE],
     },
     seller: {
       type: mongoose.Schema.Types.ObjectId,
