@@ -374,7 +374,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test(`should get 403 if user is an owner`, async () => {
+  test('should get 403 if user is an owner', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])

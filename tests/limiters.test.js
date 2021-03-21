@@ -5,7 +5,7 @@ const { userOne, userFour, productOne, setupDatabase } = require('./fixtures/db'
 beforeEach(setupDatabase);
 
 describe('loginLimiter', () => {
-  it('Should get 429 after more than 8 unsuccessful requests', async () => {
+  it('should get 429 after more than 8 unsuccessful requests', async () => {
     for (let i = 0; i < 8; i += 1) {
       await request(app)
         .post('/users/login')
@@ -30,7 +30,7 @@ describe('loginLimiter', () => {
     });
   });
 
-  it('Should NOT get 429 after more than 8 successful requests', async () => {
+  it('should NOT get 429 after more than 8 successful requests', async () => {
     for (let i = 0; i < 10; i += 1) {
       await request(app)
         .post('/users/login')
@@ -43,7 +43,7 @@ describe('loginLimiter', () => {
     }
   });
 
-  it('Should NOT get 429 after 7 unsuccessful and 2 successful request', async () => {
+  it('should NOT get 429 after 7 unsuccessful and 2 successful request', async () => {
     for (let i = 0; i < 7; i += 1) {
       await request(app)
         .post('/users/login')
@@ -68,7 +68,7 @@ describe('loginLimiter', () => {
 });
 
 describe('photoLimiter', () => {
-  it('Should get 429 after more than 150 requests', async () => {
+  it('should get 429 after more than 150 requests', async () => {
     await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -94,7 +94,7 @@ describe('photoLimiter', () => {
 });
 
 describe('signupLimiter', () => {
-  it('Should get 429 after more than 4 successful requests', async () => {
+  it('should get 429 after more than 4 successful requests', async () => {
     const data = {
       firstName: 'John',
       lastName: 'Smith',
@@ -131,7 +131,7 @@ describe('signupLimiter', () => {
     });
   });
 
-  it('Should NOT get 429 after more than 4 failed requests', async () => {
+  it('should NOT get 429 after more than 4 failed requests', async () => {
     const data = {
       firstName: 'John',
       lastName: 'Smith',
@@ -160,7 +160,7 @@ describe('signupLimiter', () => {
 });
 
 describe('accountVerificationEmailLimiter', () => {
-  it('Should get 429 after more than 3 successful requests', async () => {
+  it('should get 429 after more than 3 successful requests', async () => {
     for (let i = 0; i < 3; i += 1) {
       await request(app)
         .post('/users/send-account-verification-email')
@@ -180,7 +180,7 @@ describe('accountVerificationEmailLimiter', () => {
     });
   });
 
-  it('Should NOT get 429 after more than 3 failed requests', async () => {
+  it('should NOT get 429 after more than 3 failed requests', async () => {
     for (let i = 0; i < 10; i += 1) {
       const { body } = await request(app)
         .post('/users/send-account-verification-email')
@@ -196,7 +196,7 @@ describe('accountVerificationEmailLimiter', () => {
 });
 
 describe('verificationLinkLimiter', () => {
-  it('Should get 429 after more than 4 requests', async () => {
+  it('should get 429 after more than 4 requests', async () => {
     for (let i = 0; i < 4; i += 1) {
       const { body } = await request(app)
         .get(`/users/${userOne._id}/verify-account/uuid`)
@@ -221,7 +221,7 @@ describe('verificationLinkLimiter', () => {
 });
 
 describe('resetPasswordRequestLimiter', () => {
-  it('Should get 429 after more than 4 successful requests', async () => {
+  it('should get 429 after more than 4 successful requests', async () => {
     for (let i = 0; i < 4; i += 1) {
       await request(app)
         .post('/users/request-for-reset-password')
@@ -241,7 +241,7 @@ describe('resetPasswordRequestLimiter', () => {
     });
   });
 
-  it('Should NOT get 429 after more than 4 failed requests', async () => {
+  it('should NOT get 429 after more than 4 failed requests', async () => {
     for (let i = 0; i < 10; i += 1) {
       const { body } = await request(app)
         .post('/users/request-for-reset-password')
@@ -257,7 +257,7 @@ describe('resetPasswordRequestLimiter', () => {
 });
 
 describe('changeEmailRequestLimiter', () => {
-  it('Should get 429 after more than 3 successful requests', async () => {
+  it('should get 429 after more than 3 successful requests', async () => {
     for (let i = 0; i < 3; i += 1) {
       await request(app)
         .patch('/users/me/email')
@@ -282,7 +282,7 @@ describe('changeEmailRequestLimiter', () => {
     });
   });
 
-  it('Should NOT get 429 after more than 3 failed requests', async () => {
+  it('should NOT get 429 after more than 3 failed requests', async () => {
     for (let i = 0; i < 10; i += 1) {
       const { body } = await request(app)
         .patch('/users/me/email')
