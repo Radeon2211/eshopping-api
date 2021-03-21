@@ -18,6 +18,11 @@ const {
 } = require('./fixtures/db');
 const { pages } = require('../src/shared/constants');
 
+const allProducts = [productOne, productTwo, productThree, productFour];
+const allProductsPrices = allProducts.map(({ price }) => price);
+const defaultMinPrice = Math.min(...allProductsPrices);
+const defaultMaxPrice = Math.max(...allProductsPrices);
+
 beforeEach(setupDatabase);
 
 const uploadPhotoForProdOne = async (filename) => {
@@ -110,10 +115,17 @@ describe('GET /products', () => {
   describe('Default behaviours', () => {
     test('Should fetch all four products, starting from newest and no skip and no limit by default', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productFour,
@@ -195,10 +207,17 @@ describe('GET /products', () => {
       }
 
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products').expect(200);
 
       expect(productCount).toEqual(14);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toHaveLength(10);
     });
   });
@@ -206,10 +225,17 @@ describe('GET /products', () => {
   describe('Name param', () => {
     test('Should fetch only knife if name param is "knife"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=knife`).expect(200);
 
       expect(productCount).toEqual(1);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: productTwo.price,
+          maxPrice: productTwo.price,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productTwo,
@@ -229,10 +255,17 @@ describe('GET /products', () => {
 
     test('Should fetch only knife and mushrooms if name param is "r"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=r`).expect(200);
 
       expect(productCount).toEqual(2);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: productOne.price,
+          maxPrice: productTwo.price,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productTwo,
@@ -265,9 +298,10 @@ describe('GET /products', () => {
 
     test('Should fetch nothing if name param is "abababa" so it completely does not match to anything', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=abababa`).expect(200);
 
+      expect(productPrices).toEqual([]);
       expect(productCount).toEqual(0);
       expect(products).toEqual([]);
     });
@@ -276,37 +310,65 @@ describe('GET /products', () => {
   describe('Condition param', () => {
     test('Should fetch only products with condition "new"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=new').expect(200);
 
       expect(productCount).toEqual(2);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products.every((product) => product.condition === 'new')).toEqual(true);
     });
 
     test('Should fetch only products with condition "used"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=used').expect(200);
 
       expect(productCount).toEqual(1);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products.every((product) => product.condition === 'used')).toEqual(true);
     });
 
     test('Should fetch only products with condition "not_applicable"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=not_applicable').expect(200);
 
       expect(productCount).toEqual(1);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products.every(({ condition }) => condition === 'not_applicable')).toEqual(true);
     });
 
     test('Should fetch nothing if passed condition is different than "new", "used" and "not_applicable"', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=sth_different').expect(200);
 
       expect(productCount).toEqual(0);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toEqual([]);
     });
   });
@@ -314,10 +376,17 @@ describe('GET /products', () => {
   describe('Sort param', () => {
     test('Should sort products by name descending', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=name:desc').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].name >= products[i + 1].name).toEqual(true);
@@ -326,10 +395,17 @@ describe('GET /products', () => {
 
     test('Should sort products by name ascending', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=name:asc').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].name <= products[i + 1].name).toEqual(true);
@@ -338,10 +414,17 @@ describe('GET /products', () => {
 
     test('Should sort products by price descending', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=price:desc').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].price >= products[i + 1].price).toEqual(true);
@@ -350,10 +433,17 @@ describe('GET /products', () => {
 
     test('Should sort products by price ascending', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=price:asc').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].price <= products[i + 1].price).toEqual(true);
@@ -362,10 +452,17 @@ describe('GET /products', () => {
 
     test('Should sort products by price descending and get these with minimum $10 price', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?sortBy=price:desc&minPrice=10`).expect(200);
 
       expect(productCount).toEqual(3);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].price >= products[i + 1].price).toEqual(true);
@@ -376,10 +473,17 @@ describe('GET /products', () => {
 
     test('Should sort products by price ascending and get these with maximum $15 price', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?sortBy=price:asc&maxPrice=15`).expect(200);
 
       expect(productCount).toEqual(2);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
 
       for (let i = 0; i < products.length - 1; i += 1) {
         expect(products[i].price <= products[i + 1].price).toEqual(true);
@@ -392,10 +496,17 @@ describe('GET /products', () => {
   describe('Limit and p params', () => {
     test('Should fetch three products (newest by default) if limit is 3', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get('/products?limit=3').expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productFour,
@@ -448,10 +559,17 @@ describe('GET /products', () => {
 
     test('Should fetch oldest product, and 4 as productCount if p is 4 and limit 1', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?limit=1&p=4`).expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productOne,
@@ -471,10 +589,17 @@ describe('GET /products', () => {
 
     test('Should fetch two oldest products, and 4 as productCount if p is 2 and limit 2', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app).get(`/products?limit=2&p=2`).expect(200);
 
       expect(productCount).toEqual(4);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: defaultMinPrice,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products).toEqual([
         {
           ...productTwo,
@@ -509,49 +634,71 @@ describe('GET /products', () => {
   describe('Page param', () => {
     test(`Should fetch all products expect of logged in user's product if page is ALL_PRODUCTS`, async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app)
         .get(`/products?page=${pages.ALL_PRODUCTS}`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .expect(200);
 
       expect(productCount).toEqual(3);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: productTwo.price,
+          maxPrice: defaultMaxPrice,
+        },
+      ]);
       expect(products.every(({ seller }) => seller.username !== userOne.username));
     });
 
     test('Should fetch all products of logged in user if page is MY_PRODUCTS', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app)
         .get(`/products?page=${pages.MY_PRODUCTS}`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .expect(200);
 
       expect(productCount).toEqual(1);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: productOne.price,
+          maxPrice: productOne.price,
+        },
+      ]);
       expect(products.every(({ seller }) => seller.username === userOne.username));
     });
 
     test('Should fetch all products of user with passed username', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app)
         .get(`/products?page=${pages.USER_PRODUCTS}&seller=Major`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .expect(200);
 
       expect(productCount).toEqual(2);
+      expect(productPrices).toEqual([
+        {
+          _id: null,
+          minPrice: productTwo.price,
+          maxPrice: productThree.price,
+        },
+      ]);
       expect(products.every(({ seller }) => seller.username === userTwo.username));
     });
 
     test('Should fetch nothing if seller with passed username does not exist and page is USER_PRODUCTS', async () => {
       const {
-        body: { products, productCount },
+        body: { products, productCount, productPrices },
       } = await request(app)
         .get(`/products?page=${pages.USER_PRODUCTS}&seller=unexistingseller`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .expect(200);
 
       expect(productCount).toEqual(0);
+      expect(productPrices).toEqual([]);
       expect(products).toEqual([]);
     });
   });

@@ -41,6 +41,7 @@
     "xss-clean": "^0.1.1"
   },
   "devDependencies": {
+    "cz-conventional-changelog": "^3.3.0",
     "env-cmd": "^10.1.0",
     "eslint": "^7.18.0",
     "eslint-config-airbnb-base": "^14.2.1",
@@ -56,5 +57,10 @@
   },
   "engines": {
     "node": "14.15.4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
