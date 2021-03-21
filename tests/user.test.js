@@ -17,7 +17,7 @@ const {
   productFour,
   setupDatabase,
 } = require('./fixtures/db');
-const { getFullUser } = require('../src/shared/utility');
+const { getFullUser, agendaRemoveExpiredUser } = require('../src/shared/utility');
 const { verificationCodeTypes } = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
@@ -1831,14 +1831,11 @@ describe('Agenda - remove expired users', () => {
       })
       .expect(201);
 
-    const dayAgoDate = moment().subtract(1, 'hour').toDate();
-    await User.findOneAndUpdate({ _id: response1.body.user._id }, { createdAt: dayAgoDate });
-    await User.findOneAndUpdate({ _id: response2.body.user._id }, { createdAt: dayAgoDate });
+    const hourAgoDate = moment().subtract(1, 'hour').toDate();
+    await User.findOneAndUpdate({ _id: response1.body.user._id }, { createdAt: hourAgoDate });
+    await User.findOneAndUpdate({ _id: response2.body.user._id }, { createdAt: hourAgoDate });
 
-    await User.deleteMany({
-      status: 'pending',
-      createdAt: { $lte: moment().subtract(1, 'hour').toDate() },
-    });
+    await agendaRemoveExpiredUser();
 
     const users = await User.find().lean();
     expect(users).toHaveLength(4);

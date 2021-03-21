@@ -1,3 +1,4 @@
+const moment = require('moment');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const VerificationCode = require('../models/verificationCodeModel');
@@ -218,6 +219,13 @@ const verificationCodeChecker = async (userId, codeQueryParams) => {
   return { isError, user, verificationCode };
 };
 
+const agendaRemoveExpiredUser = async () => {
+  await User.deleteMany({
+    status: 'pending',
+    createdAt: { $lte: moment().subtract(1, 'hour').toDate() },
+  });
+};
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
@@ -232,4 +240,5 @@ module.exports = {
   verifyItemsToBuy,
   splitOrderProducts,
   verificationCodeChecker,
+  agendaRemoveExpiredUser,
 };

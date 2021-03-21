@@ -1,6 +1,5 @@
 const express = require('express');
 const Agenda = require('agenda');
-const moment = require('moment');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -9,11 +8,11 @@ const cors = require('cors');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 require('./db/mongoose');
-const User = require('./models/userModel');
 const userRouter = require('./routers/userRouter');
 const productRouter = require('./routers/productRouter');
 const orderRouter = require('./routers/orderRouter');
 const { unlessPhotoLimiter } = require('./middlewares/limiters');
+const { agendaRemoveExpiredUser } = require('./shared/utility');
 
 const app = express();
 
@@ -67,10 +66,7 @@ const agenda = new Agenda({
 });
 
 agenda.define('remove expired users', async () => {
-  await User.deleteMany({
-    status: 'pending',
-    createdAt: { $lte: moment().subtract(1, 'hour').toDate() },
-  });
+  await agendaRemoveExpiredUser();
 });
 
 (async function () {
