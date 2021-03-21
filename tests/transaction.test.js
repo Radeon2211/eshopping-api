@@ -15,7 +15,7 @@ beforeEach(setupDatabase);
 
 describe('PATCH /transaction', () => {
   describe('Items from cart', () => {
-    test('Should get transaction products the same as in cart, isDifferent false, cart null if single item is not passed', async () => {
+    test('should get transaction products the same as in cart, isDifferent false, cart null if single item is not passed', async () => {
       const {
         body: { transaction, cart, isDifferent },
       } = await request(app)
@@ -49,7 +49,7 @@ describe('PATCH /transaction', () => {
       ]);
     });
 
-    test('Should get transaction products with edited second item, isDifferent true, edited cart if product of second item changed quantity to lower value than it is in cart', async () => {
+    test('should get transaction products with edited second item, isDifferent true, edited cart if product of second item changed quantity to lower value than it is in cart', async () => {
       await request(app)
         .patch(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -98,7 +98,7 @@ describe('PATCH /transaction', () => {
       ]);
     });
 
-    test('Should get empty transaction, isDifferent true, empty cart if product of cart item is deleted before', async () => {
+    test('should get empty transaction, isDifferent true, empty cart if product of cart item is deleted before', async () => {
       await request(app)
         .delete(`/products/${productOne._id}`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -116,7 +116,7 @@ describe('PATCH /transaction', () => {
   });
 
   describe('Single item', () => {
-    test('Should get transaction with passed product, isDifferent false, cart null', async () => {
+    test('should get transaction with passed product, isDifferent false, cart null', async () => {
       const singleItem = {
         product: productFour._id,
         quantity: 1,
@@ -146,7 +146,7 @@ describe('PATCH /transaction', () => {
       ]);
     });
 
-    test('Should get transaction with edited product, isDifferent true, cart null if product quantity changed before', async () => {
+    test('should get transaction with edited product, isDifferent true, cart null if product quantity changed before', async () => {
       await request(app)
         .patch(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -184,7 +184,7 @@ describe('PATCH /transaction', () => {
       ]);
     });
 
-    test('Should get empty transaction, isDifferent true, cart null if passed product is deleted before', async () => {
+    test('should get empty transaction, isDifferent true, cart null if passed product is deleted before', async () => {
       await request(app)
         .delete(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -206,7 +206,7 @@ describe('PATCH /transaction', () => {
       expect(body.transaction).toEqual([]);
     });
 
-    test('Should get 400 if passed quantity is lower than 1', async () => {
+    test('should get 400 if passed quantity is lower than 1', async () => {
       const singleItem = {
         product: productFour._id,
         quantity: 0,
@@ -223,7 +223,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 400 if passed product is not valid ObjectId', async () => {
+    test('should get 400 if passed product is not valid ObjectId', async () => {
       const singleItem = {
         product: 'invalidId',
         quantity: 1,
@@ -240,7 +240,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 400 if passed item is an array', async () => {
+    test('should get 400 if passed item is an array', async () => {
       const singleItem = ['array'];
 
       const { body } = await request(app)
@@ -254,7 +254,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 400 if passed item is a string', async () => {
+    test('should get 400 if passed item is a string', async () => {
       const singleItem = 'string';
 
       const { body } = await request(app)
@@ -268,7 +268,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 400 if no quantity is given', async () => {
+    test('should get 400 if no quantity is given', async () => {
       const singleItem = {
         product: 'invalidId',
       };
@@ -284,7 +284,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 400 if no product is given', async () => {
+    test('should get 400 if no product is given', async () => {
       const singleItem = {
         quantity: 1,
       };
@@ -302,7 +302,7 @@ describe('PATCH /transaction', () => {
   });
 
   describe('User is unauthenticated or has status pending', () => {
-    test('Should get 401 if user has status pending', async () => {
+    test('should get 401 if user has status pending', async () => {
       const { body } = await request(app)
         .patch('/transaction')
         .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -313,7 +313,7 @@ describe('PATCH /transaction', () => {
       });
     });
 
-    test('Should get 401 if user is unauthenticated', async () => {
+    test('should get 401 if user is unauthenticated', async () => {
       const { body } = await request(app).patch('/transaction').expect(401);
       expect(body).toEqual({
         message: 'This route is blocked for you',

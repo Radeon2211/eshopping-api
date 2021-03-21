@@ -34,7 +34,7 @@ const userOneDeliveryAddress = {
 };
 
 describe('POST /orders', () => {
-  test('Should create order with productTwo, update its quantity and get transaction undefined, updated cart', async () => {
+  test('should create order with productTwo, update its quantity and get transaction undefined, updated cart', async () => {
     const {
       body: { transaction, cart },
     } = await request(app)
@@ -130,7 +130,7 @@ describe('POST /orders', () => {
     ]);
   });
 
-  test('Should create two orders with productTwo, productFour and clear cart', async () => {
+  test('should create two orders with productTwo, productFour and clear cart', async () => {
     const { body } = await request(app)
       .post('/orders')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -213,7 +213,7 @@ describe('POST /orders', () => {
     expect(body.cart).toEqual([]);
   });
 
-  test('Should create three orders with productTwo, productFour and update its quantity correctly', async () => {
+  test('should create three orders with productTwo, productFour and update its quantity correctly', async () => {
     await request(app)
       .post('/orders')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -336,7 +336,7 @@ describe('POST /orders', () => {
     ]);
   });
 
-  test('Should create order with productTwo, delete it and get transaction undefined, updated cart with only 1 item', async () => {
+  test('should create order with productTwo, delete it and get transaction undefined, updated cart with only 1 item', async () => {
     const {
       body: { transaction, cart },
     } = await request(app)
@@ -411,7 +411,7 @@ describe('POST /orders', () => {
     ]);
   });
 
-  test('Should NOT create order and get transaction with updated item', async () => {
+  test('should NOT create order and get transaction with updated item', async () => {
     await request(app)
       .patch(`/products/${productTwo._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -466,7 +466,7 @@ describe('POST /orders', () => {
     expect(orders).toEqual([]);
   });
 
-  test('Should NOT create order and get empty transaction', async () => {
+  test('should NOT create order and get empty transaction', async () => {
     await request(app)
       .delete(`/products/${productTwo._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -498,7 +498,7 @@ describe('POST /orders', () => {
     expect(body.transaction).toEqual([]);
   });
 
-  test('Should NOT create order and get 403 if product seller is the same as buyer', async () => {
+  test('should NOT create order and get 403 if product seller is the same as buyer', async () => {
     const { body } = await request(app)
       .post('/orders')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -527,7 +527,7 @@ describe('POST /orders', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .post('/orders')
       .send({
@@ -555,7 +555,7 @@ describe('POST /orders', () => {
     expect(orders).toHaveLength(0);
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .post('/orders')
       .send({
@@ -585,7 +585,7 @@ describe('POST /orders', () => {
 });
 
 describe('GET /orders', () => {
-  test('Should fetch one placed order with correct data and orderCount 1', async () => {
+  test('should fetch one placed order with correct data and orderCount 1', async () => {
     await new Order(orderOne).save();
 
     const {
@@ -619,7 +619,7 @@ describe('GET /orders', () => {
     expect(orders[0].updatedAt).toBeDefined();
   });
 
-  test('Should fetch one order from sell history and orderCount 1', async () => {
+  test('should fetch one order from sell history and orderCount 1', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -631,7 +631,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(1);
   });
 
-  test('Should fetch two placed orders and orderCount 2', async () => {
+  test('should fetch two placed orders and orderCount 2', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
 
@@ -644,7 +644,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(2);
   });
 
-  test('Should fetch two orders from sell history and orderCount 2', async () => {
+  test('should fetch two orders from sell history and orderCount 2', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
 
@@ -657,7 +657,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(2);
   });
 
-  test('Should fetch two placed orders at second page and orderCount 8', async () => {
+  test('should fetch two placed orders at second page and orderCount 8', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
     await new Order(orderThree).save();
@@ -677,7 +677,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(8);
   });
 
-  test('Should fetch two orders from sell history sorted ascending by price (saving higher to lower price)', async () => {
+  test('should fetch two orders from sell history sorted ascending by price (saving higher to lower price)', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
 
@@ -693,7 +693,7 @@ describe('GET /orders', () => {
     expect(orderCount).toEqual(2);
   });
 
-  test('Should fetch two orders from sell history sorted descending by price (saving lower to higher price)', async () => {
+  test('should fetch two orders from sell history sorted descending by price (saving lower to higher price)', async () => {
     await new Order(orderTwo).save();
     await new Order(orderOne).save();
 
@@ -709,7 +709,7 @@ describe('GET /orders', () => {
     expect(orderCount).toEqual(2);
   });
 
-  test('Should fetch two orders from sell history sorted ascending by createdAt', async () => {
+  test('should fetch two orders from sell history sorted ascending by createdAt', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
 
@@ -725,7 +725,7 @@ describe('GET /orders', () => {
     expect(orderCount).toEqual(2);
   });
 
-  test('Should fetch two orders from sell history sorted descending by createdAt', async () => {
+  test('should fetch two orders from sell history sorted descending by createdAt', async () => {
     await new Order(orderOne).save();
     await new Order(orderTwo).save();
 
@@ -741,7 +741,7 @@ describe('GET /orders', () => {
     expect(orderCount).toEqual(2);
   });
 
-  test('Should NOT fetch orders from sell history when in db is placed order of userOne', async () => {
+  test('should NOT fetch orders from sell history when in db is placed order of userOne', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -753,7 +753,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(0);
   });
 
-  test('Should NOT fetch placed orders when in db is one placed order of userOne', async () => {
+  test('should NOT fetch placed orders when in db is one placed order of userOne', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -765,7 +765,7 @@ describe('GET /orders', () => {
     expect(body.orderCount).toEqual(0);
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .get(`/orders?type=${orderTypes.PLACED_ORDERS}`)
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -776,7 +776,7 @@ describe('GET /orders', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get(`/orders?type=${orderTypes.PLACED_ORDERS}`).expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -785,7 +785,7 @@ describe('GET /orders', () => {
 });
 
 describe('GET /orders/:id', () => {
-  test('Should fetch correct orderOne with complete seller and buyer', async () => {
+  test('should fetch correct orderOne with complete seller and buyer', async () => {
     await new Order(orderOne).save();
 
     const {
@@ -817,7 +817,7 @@ describe('GET /orders/:id', () => {
     expect(order.updatedAt).toBeDefined();
   });
 
-  test(`Should fetch correct orderOne with complete seller and buyer null if buyer's account has been deleted`, async () => {
+  test(`should fetch correct orderOne with complete seller and buyer null if buyer's account has been deleted`, async () => {
     await new Order(orderOne).save();
 
     await request(app)
@@ -852,7 +852,7 @@ describe('GET /orders/:id', () => {
     expect(order.updatedAt).toBeDefined();
   });
 
-  test(`Should fetch correct orderOne with null seller and complete buyer if seller's account has been deleted`, async () => {
+  test(`should fetch correct orderOne with null seller and complete buyer if seller's account has been deleted`, async () => {
     await new Order(orderOne).save();
 
     await request(app)
@@ -886,7 +886,7 @@ describe('GET /orders/:id', () => {
     expect(order.updatedAt).toBeDefined();
   });
 
-  test('Should get 404 when incorrect ObjectId is passed', async () => {
+  test('should get 404 when incorrect ObjectId is passed', async () => {
     await new Order(orderOne).save();
     const incorrectId = new mongoose.Types.ObjectId();
 
@@ -900,7 +900,7 @@ describe('GET /orders/:id', () => {
     });
   });
 
-  test('Should get 500 when incorrect id is passed (but not ObjectId)', async () => {
+  test('should get 500 when incorrect id is passed (but not ObjectId)', async () => {
     const { body } = await request(app)
       .get('/orders/incorrectid')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -909,7 +909,7 @@ describe('GET /orders/:id', () => {
     expect(body.kind).toEqual('ObjectId');
   });
 
-  test('Should get 403 when user is not a seller either a buyer', async () => {
+  test('should get 403 when user is not a seller either a buyer', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -922,7 +922,7 @@ describe('GET /orders/:id', () => {
     });
   });
 
-  test('Should get 403 when user is not a seller either a buyer', async () => {
+  test('should get 403 when user is not a seller either a buyer', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -935,7 +935,7 @@ describe('GET /orders/:id', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -948,7 +948,7 @@ describe('GET /orders/:id', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app).get(`/orders/${orderOne._id}`).expect(401);
@@ -959,7 +959,7 @@ describe('GET /orders/:id', () => {
 });
 
 describe('GET /orders/:id/:productId/photo', () => {
-  test('Should get a photo of first product of first order', async () => {
+  test('should get a photo of first product of first order', async () => {
     const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
     const photoChunks = [];
     for await (const chunk of photoStream) {
@@ -987,7 +987,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     expect(body).toEqual(expect.any(Buffer));
   });
 
-  test('Should get 404 when incorrect ObjectId of order is passed', async () => {
+  test('should get 404 when incorrect ObjectId of order is passed', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
     const { body } = await request(app)
       .get(`/orders/${incorrectId}/${productTwo._id}/photo`)
@@ -999,7 +999,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
-  test('Should get 500 when incorrect id (but not ObjectId) of order is passed', async () => {
+  test('should get 500 when incorrect id (but not ObjectId) of order is passed', async () => {
     const { body } = await request(app)
       .get(`/orders/incorrectId/${productTwo._id}/photo`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1008,7 +1008,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     expect(body.kind).toEqual('ObjectId');
   });
 
-  test('Should get 404 when fetching photo of product which does not exist in given order', async () => {
+  test('should get 404 when fetching photo of product which does not exist in given order', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -1021,7 +1021,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
-  test('Should get 404 when fetching product photo which does not have any photo', async () => {
+  test('should get 404 when fetching product photo which does not have any photo', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -1034,7 +1034,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
-  test('Should get 403 when user is neither seller and a buyer of order', async () => {
+  test('should get 403 when user is neither seller and a buyer of order', async () => {
     const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
     const photoChunks = [];
     for await (const chunk of photoStream) {
@@ -1064,7 +1064,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)
@@ -1076,7 +1076,7 @@ describe('GET /orders/:id/:productId/photo', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     await new Order(orderOne).save();
 
     const { body } = await request(app)

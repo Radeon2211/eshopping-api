@@ -40,7 +40,7 @@ const newUserData = {
 };
 
 describe('POST /users', () => {
-  test('Should signup a new user and create verification code', async () => {
+  test('should signup a new user and create verification code', async () => {
     const dateBefore = moment();
     const {
       body: { user },
@@ -87,7 +87,7 @@ describe('POST /users', () => {
     ).toEqual(true);
   });
 
-  test('Should signup a new user without isAdmin, empty cart, 1 token, createdAt with current time', async () => {
+  test('should signup a new user without isAdmin, empty cart, 1 token, createdAt with current time', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -119,7 +119,7 @@ describe('POST /users', () => {
     expect(user.createdAt).not.toEqual('2020-11-11T11:11:11.911Z');
   });
 
-  test('Should NOT signup user with invalid username', async () => {
+  test('should NOT signup user with invalid username', async () => {
     await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.3')
@@ -130,7 +130,7 @@ describe('POST /users', () => {
       .expect(400);
   });
 
-  test('Should NOT signup user with invalid email', async () => {
+  test('should NOT signup user with invalid email', async () => {
     await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.4')
@@ -141,7 +141,7 @@ describe('POST /users', () => {
       .expect(400);
   });
 
-  test('Should NOT signup user with invalid password', async () => {
+  test('should NOT signup user with invalid password', async () => {
     await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.5')
@@ -152,7 +152,7 @@ describe('POST /users', () => {
       .expect(400);
   });
 
-  test('Should NOT signup user without contacts', async () => {
+  test('should NOT signup user without contacts', async () => {
     await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.6')
@@ -163,7 +163,7 @@ describe('POST /users', () => {
       .expect(400);
   });
 
-  test('Should NOT signup user with incomplete contacts', async () => {
+  test('should NOT signup user with incomplete contacts', async () => {
     await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.7')
@@ -178,7 +178,7 @@ describe('POST /users', () => {
 });
 
 describe('POST /users/login', () => {
-  test('Should get isDifferent false and full user', async () => {
+  test('should get isDifferent false and full user', async () => {
     const {
       body: { user, isDifferent },
     } = await request(app)
@@ -203,7 +203,7 @@ describe('POST /users/login', () => {
     expect(user.cart).toEqual(fullUser.cart);
   });
 
-  test('Should get isDifferent true and user with cart length 1 if product of second cart item is deleted before', async () => {
+  test('should get isDifferent true and user with cart length 1 if product of second cart item is deleted before', async () => {
     await request(app)
       .delete(`/products/${productFour._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -230,7 +230,7 @@ describe('POST /users/login', () => {
     expect(user.cart).toEqual([fullUser.cart[0]]);
   });
 
-  test('Should NOT login with non existing email', async () => {
+  test('should NOT login with non existing email', async () => {
     const { body } = await request(app)
       .post('/users/login')
       .send({
@@ -244,7 +244,7 @@ describe('POST /users/login', () => {
     });
   });
 
-  test('Should NOT login with incorrect password', async () => {
+  test('should NOT login with incorrect password', async () => {
     const { body } = await request(app)
       .post('/users/login')
       .send({
@@ -260,7 +260,7 @@ describe('POST /users/login', () => {
 });
 
 describe('POST /users/logout', () => {
-  test('Should logout user and update tokens field', async () => {
+  test('should logout user and update tokens field', async () => {
     await request(app)
       .post('/users/logout')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -270,7 +270,7 @@ describe('POST /users/logout', () => {
     expect(user.tokens).toEqual([]);
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).post('/users/logout').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -279,7 +279,7 @@ describe('POST /users/logout', () => {
 });
 
 describe('POST /users/send-account-verification-email', () => {
-  test('Should create verification code to freshly created user', async () => {
+  test('should create verification code to freshly created user', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -316,7 +316,7 @@ describe('POST /users/send-account-verification-email', () => {
     expect(validateUUID(verificationCodes[1].code, 4)).toEqual(true);
   });
 
-  test('Should NOT create verification code if user already has status active', async () => {
+  test('should NOT create verification code if user already has status active', async () => {
     const { body } = await request(app)
       .post('/users/send-account-verification-email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -330,7 +330,7 @@ describe('POST /users/send-account-verification-email', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).post('/users/send-account-verification-email').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -339,7 +339,7 @@ describe('POST /users/send-account-verification-email', () => {
 });
 
 describe('GET /users/:id/verify-account/:code', () => {
-  test('Should verify account of freshly created user', async () => {
+  test('should verify account of freshly created user', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -363,7 +363,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('Should NOT verify account of freshly created user if type of verification code is incorrect', async () => {
+  test('should NOT verify account of freshly created user if type of verification code is incorrect', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -392,7 +392,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     expect(verificationCodesAfter).toHaveLength(2);
   });
 
-  test('Should NOT verify account if verification code is incorrect', async () => {
+  test('should NOT verify account if verification code is incorrect', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -418,7 +418,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test(`Should NOT verify account if passed user id does not match to user's id whose email is in verification code record`, async () => {
+  test(`should NOT verify account if passed user id does not match to user's id whose email is in verification code record`, async () => {
     const {
       body: { user },
     } = await request(app)
@@ -446,7 +446,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test('Should NOT verify account if user does not exist', async () => {
+  test('should NOT verify account if user does not exist', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -481,7 +481,7 @@ describe('GET /users/:id/verify-account/:code', () => {
 });
 
 describe('POST /users/request-for-reset-password', () => {
-  test('Should create correct verification code', async () => {
+  test('should create correct verification code', async () => {
     await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.14')
@@ -501,7 +501,7 @@ describe('POST /users/request-for-reset-password', () => {
     expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
   });
 
-  test('Should get 404 if given email is not found in database', async () => {
+  test('should get 404 if given email is not found in database', async () => {
     const { body } = await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.15')
@@ -516,7 +516,7 @@ describe('POST /users/request-for-reset-password', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('Should get 400 if invalid email is given', async () => {
+  test('should get 400 if invalid email is given', async () => {
     const { body } = await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.16')
@@ -531,7 +531,7 @@ describe('POST /users/request-for-reset-password', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('Should get 400 if no email is given', async () => {
+  test('should get 400 if no email is given', async () => {
     const { body } = await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.17')
@@ -547,7 +547,7 @@ describe('POST /users/request-for-reset-password', () => {
 });
 
 describe('GET /users/:id/reset-password/:code', () => {
-  test('Should reset password', async () => {
+  test('should reset password', async () => {
     await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.18')
@@ -573,7 +573,7 @@ describe('GET /users/:id/reset-password/:code', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('Should NOT reset password if type of verification code is incorrect', async () => {
+  test('should NOT reset password if type of verification code is incorrect', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -603,7 +603,7 @@ describe('GET /users/:id/reset-password/:code', () => {
     expect(verificationCodesAfter).toHaveLength(2);
   });
 
-  test('Should NOT reset password if verification code is incorrect', async () => {
+  test('should NOT reset password if verification code is incorrect', async () => {
     await request(app)
       .post('/users/request-for-reset-password')
       .set('X-Forwarded-For', '192.168.2.20')
@@ -628,7 +628,7 @@ describe('GET /users/:id/reset-password/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test(`Should NOT reset password if passed user id does not match to user's id whose email is in verification code record`, async () => {
+  test(`should NOT reset password if passed user id does not match to user's id whose email is in verification code record`, async () => {
     const {
       body: { user },
     } = await request(app)
@@ -657,7 +657,7 @@ describe('GET /users/:id/reset-password/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test('Should NOT reset password if user does not exist', async () => {
+  test('should NOT reset password if user does not exist', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -695,7 +695,7 @@ describe('GET /users/:id/reset-password/:code', () => {
 });
 
 describe('GET /users/me', () => {
-  test('Should get full user and isDifferent false', async () => {
+  test('should get full user and isDifferent false', async () => {
     const {
       body: { user, isDifferent },
     } = await request(app)
@@ -736,7 +736,7 @@ describe('GET /users/me', () => {
     });
   });
 
-  test('Should get full user with cart length 1, isDifferent true if product of second cart item is deleted before', async () => {
+  test('should get full user with cart length 1, isDifferent true if product of second cart item is deleted before', async () => {
     await request(app)
       .delete(`/products/${productFour._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -772,7 +772,7 @@ describe('GET /users/me', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get('/users/me').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -781,7 +781,7 @@ describe('GET /users/me', () => {
 });
 
 describe('GET /users/:username', () => {
-  test('Should get only username of the user', async () => {
+  test('should get only username of the user', async () => {
     const {
       body: { profile },
     } = await request(app).get(`/users/${userTwo.username}`).expect(200);
@@ -791,7 +791,7 @@ describe('GET /users/:username', () => {
     });
   });
 
-  test('Should get username, email and phone of the user if user has set contacts to [email, phone]', async () => {
+  test('should get username, email and phone of the user if user has set contacts to [email, phone]', async () => {
     const {
       body: { profile },
     } = await request(app).get(`/users/${userOne.username}`).expect(200);
@@ -803,7 +803,7 @@ describe('GET /users/:username', () => {
     });
   });
 
-  test('Should get 404 if user with passed username does not exist', async () => {
+  test('should get 404 if user with passed username does not exist', async () => {
     const { body } = await request(app).get('/users/notexist').expect(404);
     expect(body).toEqual({
       message: 'User with given username does not exist',
@@ -813,7 +813,7 @@ describe('GET /users/:username', () => {
 
 describe('PATCH /users/me', () => {
   describe('Everything expect password', () => {
-    test('Should update everything what is possible and get full updated user', async () => {
+    test('should update everything what is possible and get full updated user', async () => {
       const updates = {
         firstName: 'firstName',
         lastName: 'lastName',
@@ -891,7 +891,7 @@ describe('PATCH /users/me', () => {
       expect(user.createdAt).toBeDefined();
     });
 
-    test('Should update phone field and get cart length 1 if product of second cart item is deleted before', async () => {
+    test('should update phone field and get cart length 1 if product of second cart item is deleted before', async () => {
       await request(app)
         .delete(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -913,7 +913,7 @@ describe('PATCH /users/me', () => {
       expect(user.cart[0].product._id).toEqual(productTwo._id.toJSON());
     });
 
-    test('Should update phone field and get user with updated cart if product of second item changed quantity before', async () => {
+    test('should update phone field and get user with updated cart if product of second item changed quantity before', async () => {
       await request(app)
         .patch(`/products/${productFour._id}`)
         .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -938,7 +938,7 @@ describe('PATCH /users/me', () => {
       expect(user.cart[1].quantity).toEqual(40);
     });
 
-    test('Should NOT update phone if it has not prefix', async () => {
+    test('should NOT update phone if it has not prefix', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -953,7 +953,7 @@ describe('PATCH /users/me', () => {
       expect(body.errors.phone.message).toEqual('Enter valid phone number');
     });
 
-    test('Should NOT update phone if it has too long prefix', async () => {
+    test('should NOT update phone if it has too long prefix', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -968,7 +968,7 @@ describe('PATCH /users/me', () => {
       expect(body.errors.phone.message).toEqual('Enter valid phone number');
     });
 
-    test('Should NOT update phone if it has too long phone number (second part)', async () => {
+    test('should NOT update phone if it has too long phone number (second part)', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -983,7 +983,7 @@ describe('PATCH /users/me', () => {
       expect(body.errors.phone.message).toEqual('Enter valid phone number');
     });
 
-    test('Should NOT update phone if it has too short phone number (second part)', async () => {
+    test('should NOT update phone if it has too short phone number (second part)', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -998,7 +998,7 @@ describe('PATCH /users/me', () => {
       expect(body.errors.phone.message).toEqual('Enter valid phone number');
     });
 
-    test('Should NOT update username', async () => {
+    test('should NOT update username', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1015,7 +1015,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update email', async () => {
+    test('should NOT update email', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1032,7 +1032,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update createdAt', async () => {
+    test('should NOT update createdAt', async () => {
       const newCreatedAt = '2020-11-11T11:11:11.911Z';
 
       const { body } = await request(app)
@@ -1051,7 +1051,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update isAdmin', async () => {
+    test('should NOT update isAdmin', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1068,7 +1068,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update tokens', async () => {
+    test('should NOT update tokens', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1085,7 +1085,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update cart', async () => {
+    test('should NOT update cart', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1102,7 +1102,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update status', async () => {
+    test('should NOT update status', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1121,7 +1121,7 @@ describe('PATCH /users/me', () => {
   });
 
   describe('Password', () => {
-    test('Should update password if currentPassword is correct and new password is different', async () => {
+    test('should update password if currentPassword is correct and new password is different', async () => {
       const newPassword = 'newPassword';
 
       await request(app)
@@ -1138,7 +1138,7 @@ describe('PATCH /users/me', () => {
       expect(passwordChanged).toEqual(true);
     });
 
-    test('Should NOT update password without current password', async () => {
+    test('should NOT update password without current password', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1152,7 +1152,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update password if current password is invalid', async () => {
+    test('should NOT update password if current password is invalid', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1167,7 +1167,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should NOT update password if new password is the same as current password', async () => {
+    test('should NOT update password if new password is the same as current password', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1184,7 +1184,7 @@ describe('PATCH /users/me', () => {
   });
 
   describe('User unauthenticated or with status pending', () => {
-    test('Should get 401 if user has status pending', async () => {
+    test('should get 401 if user has status pending', async () => {
       const { body } = await request(app)
         .patch('/users/me')
         .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -1198,7 +1198,7 @@ describe('PATCH /users/me', () => {
       });
     });
 
-    test('Should get 401 if user is unauthenticated', async () => {
+    test('should get 401 if user is unauthenticated', async () => {
       const { body } = await request(app).get('/users/me').expect(401);
       expect(body).toEqual({
         message: 'This route is blocked for you',
@@ -1208,7 +1208,7 @@ describe('PATCH /users/me', () => {
 });
 
 describe('PATCH /users/me/email', () => {
-  test('Should generate verification code if current password is correct and new email is unique', async () => {
+  test('should generate verification code if current password is correct and new email is unique', async () => {
     const newEmail = 'newemail@domain.com';
     await request(app)
       .patch('/users/me/email')
@@ -1234,7 +1234,7 @@ describe('PATCH /users/me/email', () => {
     expect(validateUUID(verificationCodes[0].code, 4)).toEqual(true);
   });
 
-  test('Should NOT generate verification code if new email is not unique', async () => {
+  test('should NOT generate verification code if new email is not unique', async () => {
     const { body } = await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1253,7 +1253,7 @@ describe('PATCH /users/me/email', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('Should NOT generate verification code if new email is the same as current email', async () => {
+  test('should NOT generate verification code if new email is the same as current email', async () => {
     const { body } = await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1272,7 +1272,7 @@ describe('PATCH /users/me/email', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('Should NOT generate verification code if incorrect current password is given', async () => {
+  test('should NOT generate verification code if incorrect current password is given', async () => {
     const { body } = await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1291,7 +1291,7 @@ describe('PATCH /users/me/email', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('Should NOT generate verification code if current password is not given', async () => {
+  test('should NOT generate verification code if current password is not given', async () => {
     const { body } = await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1310,7 +1310,7 @@ describe('PATCH /users/me/email', () => {
   });
 
   describe('User unauthenticated or with status pending', () => {
-    test('Should get 401 if user has status pending', async () => {
+    test('should get 401 if user has status pending', async () => {
       const { body } = await request(app)
         .patch('/users/me/email')
         .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -1326,7 +1326,7 @@ describe('PATCH /users/me/email', () => {
       });
     });
 
-    test('Should get 401 if user is unauthenticated', async () => {
+    test('should get 401 if user is unauthenticated', async () => {
       const { body } = await request(app)
         .patch('/users/me/email')
         .set('X-Forwarded-For', '192.168.2.29')
@@ -1344,7 +1344,7 @@ describe('PATCH /users/me/email', () => {
 });
 
 describe('GET /users/:id/change-email/:code', () => {
-  test('Should change email', async () => {
+  test('should change email', async () => {
     const newEmail = 'newemail@domain.com';
     await request(app)
       .patch('/users/me/email')
@@ -1371,7 +1371,7 @@ describe('GET /users/:id/change-email/:code', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('Should NOT change email if verification code is incorrect', async () => {
+  test('should NOT change email if verification code is incorrect', async () => {
     await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1399,7 +1399,7 @@ describe('GET /users/:id/change-email/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test('Should NOT change email if type of verification code is incorrect', async () => {
+  test('should NOT change email if type of verification code is incorrect', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -1428,7 +1428,7 @@ describe('GET /users/:id/change-email/:code', () => {
     expect(verificationCodesAfter).toHaveLength(2);
   });
 
-  test(`Should NOT change email if passed user id does not match to user's id whose email is in verification code record`, async () => {
+  test(`should NOT change email if passed user id does not match to user's id whose email is in verification code record`, async () => {
     await request(app)
       .patch('/users/me/email')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1458,7 +1458,7 @@ describe('GET /users/:id/change-email/:code', () => {
     expect(verificationCodesAfter).toHaveLength(1);
   });
 
-  test('Should NOT change email if user does not exist', async () => {
+  test('should NOT change email if user does not exist', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -1503,7 +1503,7 @@ describe('GET /users/:id/change-email/:code', () => {
 });
 
 describe('PATCH /users/add-admin', () => {
-  test('Should admin make other user admin', async () => {
+  test('should admin make other user admin', async () => {
     await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1514,7 +1514,7 @@ describe('PATCH /users/add-admin', () => {
     expect(user.isAdmin).toEqual(true);
   });
 
-  test('Should NOT non admin make other user admin', async () => {
+  test('should NOT non admin make other user admin', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -1529,7 +1529,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 404 if user with given email does not exist', async () => {
+  test('should get 404 if user with given email does not exist', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1541,7 +1541,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 400 if user is trying to make himself an admin', async () => {
+  test('should get 400 if user is trying to make himself an admin', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1553,7 +1553,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 400 when trying to make user with status pending an admin', async () => {
+  test('should get 400 when trying to make user with status pending an admin', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1565,7 +1565,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 400 if user with given email is already an admin', async () => {
+  test('should get 400 if user with given email is already an admin', async () => {
     await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1583,7 +1583,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -1594,7 +1594,7 @@ describe('PATCH /users/add-admin', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).patch('/users/add-admin').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -1603,7 +1603,7 @@ describe('PATCH /users/add-admin', () => {
 });
 
 describe('PATCH /users/remove-admin', () => {
-  test('Should admin remove other admin', async () => {
+  test('should admin remove other admin', async () => {
     await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1620,7 +1620,7 @@ describe('PATCH /users/remove-admin', () => {
     expect(user.isAdmin).toBeUndefined();
   });
 
-  test('Should NOT non admin remove other admin', async () => {
+  test('should NOT non admin remove other admin', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -1635,7 +1635,7 @@ describe('PATCH /users/remove-admin', () => {
     });
   });
 
-  test('Should get 404 if user with given email does not exist', async () => {
+  test('should get 404 if user with given email does not exist', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1647,7 +1647,7 @@ describe('PATCH /users/remove-admin', () => {
     });
   });
 
-  test('Should get 400 if user with given email is already not an admin', async () => {
+  test('should get 400 if user with given email is already not an admin', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -1659,7 +1659,7 @@ describe('PATCH /users/remove-admin', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -1670,7 +1670,7 @@ describe('PATCH /users/remove-admin', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).patch('/users/remove-admin').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -1679,7 +1679,7 @@ describe('PATCH /users/remove-admin', () => {
 });
 
 describe('DELETE /users/me', () => {
-  test('Should delete user profile and its products', async () => {
+  test('should delete user profile and its products', async () => {
     await request(app)
       .delete('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1695,7 +1695,7 @@ describe('DELETE /users/me', () => {
     expect(products).toHaveLength(3);
   });
 
-  test('Should delete user profile and its verification code if user is freshly created', async () => {
+  test('should delete user profile and its verification code if user is freshly created', async () => {
     const {
       body: { user },
     } = await request(app)
@@ -1722,7 +1722,7 @@ describe('DELETE /users/me', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('Should NOT delete user profile if currentPassword is incorrect', async () => {
+  test('should NOT delete user profile if currentPassword is incorrect', async () => {
     const { body } = await request(app)
       .delete('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1737,7 +1737,7 @@ describe('DELETE /users/me', () => {
     });
   });
 
-  test('Should NOT delete user profile without currentPassword', async () => {
+  test('should NOT delete user profile without currentPassword', async () => {
     const { body } = await request(app)
       .delete('/users/me')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1751,7 +1751,7 @@ describe('DELETE /users/me', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).delete('/users/me').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -1760,7 +1760,7 @@ describe('DELETE /users/me', () => {
 });
 
 describe('generateVerificationCode()', () => {
-  test('Should create correct verification code return correct verification link (type ACCOUNT_ACTIVATION)', async () => {
+  test('should create correct verification code return correct verification link (type ACCOUNT_ACTIVATION)', async () => {
     const user = await User.findById(userOne._id);
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.ACCOUNT_ACTIVATION,
@@ -1784,7 +1784,7 @@ describe('generateVerificationCode()', () => {
     );
   });
 
-  test('Should create correct verification code return correct verification link (type RESET_PASSWORD)', async () => {
+  test('should create correct verification code return correct verification link (type RESET_PASSWORD)', async () => {
     const user = await User.findById(userOne._id);
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.RESET_PASSWORD,
@@ -1810,7 +1810,7 @@ describe('generateVerificationCode()', () => {
 });
 
 describe('Agenda - remove expired users', () => {
-  test('Should delete users with status pending and createdAt at least 1 hour earlier', async () => {
+  test('should delete users with status pending and createdAt at least 1 hour earlier', async () => {
     const response1 = await request(app)
       .post('/users')
       .set('X-Forwarded-For', '192.168.2.36')

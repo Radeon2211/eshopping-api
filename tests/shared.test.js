@@ -45,7 +45,7 @@ beforeEach(setupDatabase);
 
 describe('Constants', () => {
   describe('SELLER_USERNAME_POPULATE', () => {
-    test(`Should get product with seller username if seller's account exists`, async () => {
+    test(`should get product with seller username if seller's account exists`, async () => {
       const product = await Product.findById(productOne._id)
         .populate(SELLER_USERNAME_POPULATE)
         .lean();
@@ -54,7 +54,7 @@ describe('Constants', () => {
       });
     });
 
-    test(`Should get order with seller null if seller's account does not exist`, async () => {
+    test(`should get order with seller null if seller's account does not exist`, async () => {
       await new Order(orderOne).save();
 
       await request(app)
@@ -69,7 +69,7 @@ describe('Constants', () => {
   });
 
   describe('BUYER_USERNAME_POPULATE', () => {
-    test(`Should get order with buyer username if buyer's account exists`, async () => {
+    test(`should get order with buyer username if buyer's account exists`, async () => {
       await new Order(orderOne).save();
 
       const order = await Order.findById(orderOne._id).populate(BUYER_USERNAME_POPULATE).lean();
@@ -78,7 +78,7 @@ describe('Constants', () => {
       });
     });
 
-    test(`Should get order with buyer null if buyer's account does not exist`, async () => {
+    test(`should get order with buyer null if buyer's account does not exist`, async () => {
       await new Order(orderOne).save();
 
       await request(app)
@@ -93,7 +93,7 @@ describe('Constants', () => {
   });
 
   describe('ORDER_SELLER_POPULATE', () => {
-    test(`Should get order with seller username, email and phone if seller's account exists`, async () => {
+    test(`should get order with seller username, email and phone if seller's account exists`, async () => {
       await new Order(orderOne).save();
 
       const order = await Order.findById(orderOne._id).populate(ORDER_SELLER_POPULATE).lean();
@@ -104,7 +104,7 @@ describe('Constants', () => {
       });
     });
 
-    test(`Should get order with seller null if seller's account does not exist`, async () => {
+    test(`should get order with seller null if seller's account does not exist`, async () => {
       await new Order(orderOne).save();
 
       await request(app)
@@ -119,7 +119,7 @@ describe('Constants', () => {
   });
 
   describe('CART_POPULATE', () => {
-    test('Should get user with poulated cart and seller username of each product', async () => {
+    test('should get user with poulated cart and seller username of each product', async () => {
       const { cart } = await User.findById(userOne._id).populate(CART_POPULATE).lean();
 
       expect(cart).toHaveLength(2);
@@ -163,7 +163,7 @@ describe('Constants', () => {
   });
 
   describe('MyError', () => {
-    test('Should get object with message after throwing error with MyError', async () => {
+    test('should get object with message after throwing error with MyError', async () => {
       const errorMessage = 'test error';
       try {
         throw new MyError(errorMessage);
@@ -178,7 +178,7 @@ describe('Constants', () => {
 
 describe('Utility', () => {
   describe('createSortObject()', () => {
-    test('Should create sort object with createdAt descending if sort options are not set', async () => {
+    test('should create sort object with createdAt descending if sort options are not set', async () => {
       const req = {
         query: {},
       };
@@ -188,7 +188,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should create sort object with price descending', async () => {
+    test('should create sort object with price descending', async () => {
       const req = {
         query: {
           sortBy: 'price:desc',
@@ -200,7 +200,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should create sort object with name ascending', async () => {
+    test('should create sort object with name ascending', async () => {
       const req = {
         query: {
           sortBy: 'name:asc',
@@ -214,7 +214,7 @@ describe('Utility', () => {
   });
 
   describe('getCorrectProduct', () => {
-    test('Should get product with boolean photo false without seller username', async () => {
+    test('should get product with boolean photo false without seller username', async () => {
       const product = await Product.findById(productOne._id).lean();
       const correctProduct = getCorrectProduct(product);
 
@@ -224,7 +224,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should get product with boolean photo true and seller username when second argument is true', async () => {
+    test('should get product with boolean photo true and seller username when second argument is true', async () => {
       await request(app)
         .post(`/products/${productOne._id}/photo`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -245,7 +245,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should get product with boolean photo true and seller null when second argument is true and an owner does not exist', async () => {
+    test('should get product with boolean photo true and seller null when second argument is true and an owner does not exist', async () => {
       await request(app)
         .post(`/products/${productOne._id}/photo`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -268,7 +268,7 @@ describe('Utility', () => {
   });
 
   describe('getCorrectOrders()', () => {
-    test('Should get orders with boolean photo products', async () => {
+    test('should get orders with boolean photo products', async () => {
       await new Order(orderOne).save();
 
       const orders = await Order.find().lean();
@@ -291,7 +291,7 @@ describe('Utility', () => {
   });
 
   describe('getFullUser()', () => {
-    test('Should get user without password and tokens but with populated cart with boolean product photo', async () => {
+    test('should get user without password and tokens but with populated cart with boolean product photo', async () => {
       const user = await getFullUser(userOne._id);
 
       expect(user).toEqual({
@@ -348,7 +348,7 @@ describe('Utility', () => {
   });
 
   describe('checkCartDifference()', () => {
-    test('Should return true if carts are different (product of first item is deleted before)', async () => {
+    test('should return true if carts are different (product of first item is deleted before)', async () => {
       const userOneCart = userOne.cart;
 
       await request(app)
@@ -362,7 +362,7 @@ describe('Utility', () => {
       expect(isDifferent).toEqual(true);
     });
 
-    test('Should return true if carts are different (product of first item changed quantity to 1 before - to lower than it is in cart)', async () => {
+    test('should return true if carts are different (product of first item changed quantity to 1 before - to lower than it is in cart)', async () => {
       const userOneCart = userOne.cart;
 
       await request(app)
@@ -379,7 +379,7 @@ describe('Utility', () => {
       expect(isDifferent).toEqual(true);
     });
 
-    test('Should return false if carts are the same', async () => {
+    test('should return false if carts are the same', async () => {
       const userOneCart = userOne.cart;
       const verifiedUserOneCart = await verifyCart(userOneCart);
 
@@ -389,7 +389,7 @@ describe('Utility', () => {
   });
 
   describe('verifyCart()', () => {
-    test('Should return the same cart if nothing changed', async () => {
+    test('should return the same cart if nothing changed', async () => {
       const verifiedUserOneCart = await verifyCart(userOne.cart);
 
       expect(verifiedUserOneCart).toEqual([
@@ -406,7 +406,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should return only second item from cart if product of first item is deleted before', async () => {
+    test('should return only second item from cart if product of first item is deleted before', async () => {
       await request(app)
         .delete(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -423,7 +423,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should return cart with edited first item if product of first item changed quantity to 1 before - to lower than it is in cart', async () => {
+    test('should return cart with edited first item if product of first item changed quantity to 1 before - to lower than it is in cart', async () => {
       await request(app)
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -450,7 +450,7 @@ describe('Utility', () => {
   });
 
   describe('updateUserCart()', () => {
-    test('Should return isDifferent false if products from cart did not change before', async () => {
+    test('should return isDifferent false if products from cart did not change before', async () => {
       const user = await User.findById(userOne._id);
       const isDifferent = await updateUserCart(user, user.cart);
 
@@ -460,7 +460,7 @@ describe('Utility', () => {
       expect(userAfterUpdate.cart).toEqual(userOne.cart);
     });
 
-    test('Should update cart and return isDifferent true if first product from cart changed quantity and it is lower than quantity in cart', async () => {
+    test('should update cart and return isDifferent true if first product from cart changed quantity and it is lower than quantity in cart', async () => {
       await request(app)
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -483,7 +483,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should update cart and return isDifferent true if first product from cart is deleted before', async () => {
+    test('should update cart and return isDifferent true if first product from cart is deleted before', async () => {
       await request(app)
         .delete(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -499,7 +499,7 @@ describe('Utility', () => {
   });
 
   describe('getTransactionProduct()', () => {
-    test('Should get correct transaction product which has populated seller username', async () => {
+    test('should get correct transaction product which has populated seller username', async () => {
       const product = await Product.findById(productOne._id)
         .populate(SELLER_USERNAME_POPULATE)
         .lean();
@@ -516,7 +516,7 @@ describe('Utility', () => {
       });
     });
 
-    test('Should get correct transaction product which has populated full seller', async () => {
+    test('should get correct transaction product which has populated full seller', async () => {
       const product = await Product.findById(productOne._id).populate('seller').lean();
       const transactionProduct = getTransactionProduct(product);
       expect(transactionProduct).toEqual({
@@ -533,7 +533,7 @@ describe('Utility', () => {
   });
 
   describe('verifyItemsToTransaction()', () => {
-    test('Should verify items to transaction and get isDifferent false and update cart but cart should not change', async () => {
+    test('should verify items to transaction and get isDifferent false and update cart but cart should not change', async () => {
       const user = await User.findById(userOne._id);
 
       const { transaction, isDifferent } = await verifyItemsToTransaction(user.cart, true, user);
@@ -566,7 +566,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should verify items to transaction and get isDifferent true if product of first item changed quantity to lower than it is in cart and update cart and cart should change', async () => {
+    test('should verify items to transaction and get isDifferent true if product of first item changed quantity to lower than it is in cart and update cart and cart should change', async () => {
       const user = await User.findById(userOne._id);
 
       await request(app)
@@ -618,7 +618,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should verify items to transaction and get isDifferent true and update cart and cart should change if product of first item is deleted', async () => {
+    test('should verify items to transaction and get isDifferent true and update cart and cart should change if product of first item is deleted', async () => {
       const user = await User.findById(userOne._id);
 
       await request(app)
@@ -653,7 +653,7 @@ describe('Utility', () => {
   });
 
   describe('getOrderProduct()', () => {
-    test('Should get correct order product which has populated full seller', async () => {
+    test('should get correct order product which has populated full seller', async () => {
       const product = await Product.findById(productOne._id).populate('seller').lean();
       const orderProduct = getOrderProduct(product);
       expect(orderProduct).toEqual({
@@ -668,7 +668,7 @@ describe('Utility', () => {
   });
 
   describe('verifyItemsToBuy()', () => {
-    test('Should get correct orderProducts, transaction, isDifferent false, isBuyingOwnProducts false if items are correct', async () => {
+    test('should get correct orderProducts, transaction, isDifferent false, isBuyingOwnProducts false if items are correct', async () => {
       const transactionToVerify = [
         {
           _id: productTwo._id,
@@ -706,7 +706,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should get orderProducts and transaction with updated item, isDifferent true, isBuyingOwnProducts false if given quantity is too high', async () => {
+    test('should get orderProducts and transaction with updated item, isDifferent true, isBuyingOwnProducts false if given quantity is too high', async () => {
       const transactionToVerify = [
         {
           _id: productTwo._id,
@@ -749,7 +749,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should get orderProducts and transaction with updated item, isDifferent true, isBuyingOwnProducts false if quantity changed before', async () => {
+    test('should get orderProducts and transaction with updated item, isDifferent true, isBuyingOwnProducts false if quantity changed before', async () => {
       await request(app)
         .patch(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -800,7 +800,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should get empty orderProducts and transaction, isDifferent true, isBuyingOwnProducts false', async () => {
+    test('should get empty orderProducts and transaction, isDifferent true, isBuyingOwnProducts false', async () => {
       await request(app)
         .delete(`/products/${productTwo._id}`)
         .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -833,7 +833,7 @@ describe('Utility', () => {
       expect(transaction).toEqual([]);
     });
 
-    test('Should get isBuyingOwnProducts true if product seller is the same as buyer', async () => {
+    test('should get isBuyingOwnProducts true if product seller is the same as buyer', async () => {
       const transactionToVerify = [
         {
           _id: productTwo._id,
@@ -853,7 +853,7 @@ describe('Utility', () => {
   });
 
   describe('splitOrderProduct()', () => {
-    test('Should split two orderProducts to two orders if they are from different sellers', async () => {
+    test('should split two orderProducts to two orders if they are from different sellers', async () => {
       const orderProducts = [
         {
           _id: productTwo._id,
@@ -903,7 +903,7 @@ describe('Utility', () => {
       ]);
     });
 
-    test('Should split three orderProducts to two orders if two of them are from the same seller', async () => {
+    test('should split three orderProducts to two orders if two of them are from the same seller', async () => {
       const orderProducts = [
         {
           _id: productTwo._id,
@@ -970,7 +970,7 @@ describe('Utility', () => {
   });
 
   describe('verificationCodeChecker()', () => {
-    test('Should return isError false, correct user and verification code', async () => {
+    test('should return isError false, correct user and verification code', async () => {
       await request(app)
         .post('/users/request-for-reset-password')
         .set('X-Forwarded-For', '192.168.3.1')
@@ -993,7 +993,7 @@ describe('Utility', () => {
       expect(validateUUID(verificationCode.code, 4)).toEqual(true);
     });
 
-    test('Should return isError true, user null and verification code null if any code does not exist', async () => {
+    test('should return isError true, user null and verification code null if any code does not exist', async () => {
       const { isError, user, verificationCode } = await verificationCodeChecker(
         userOne._id.toString(),
         {

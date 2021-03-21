@@ -23,7 +23,7 @@ const { updateCartActions } = require('../src/shared/constants');
 beforeEach(setupDatabase);
 
 describe('GET /cart', () => {
-  test('Should get user cart with 2 products with boolean product photo and isDifferent false and 48 quantity of second product', async () => {
+  test('should get user cart with 2 products with boolean product photo and isDifferent false and 48 quantity of second product', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -74,7 +74,7 @@ describe('GET /cart', () => {
     expect(cart[1].product.updatedAt).toBeDefined();
   });
 
-  test('Should get user cart only with second product and isDifferent true when first product is deleted before', async () => {
+  test('should get user cart only with second product and isDifferent true when first product is deleted before', async () => {
     await request(app)
       .delete(`/products/${productTwo._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -111,7 +111,7 @@ describe('GET /cart', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should get isDifferent true and user cart with updated second product - 40 quantity when product is updated in db before ', async () => {
+  test('should get isDifferent true and user cart with updated second product - 40 quantity when product is updated in db before ', async () => {
     await request(app)
       .patch(`/products/${productFour._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -130,7 +130,7 @@ describe('GET /cart', () => {
     expect(body.isDifferent).toEqual(true);
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .get('/cart')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -141,7 +141,7 @@ describe('GET /cart', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get('/cart').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -150,7 +150,7 @@ describe('GET /cart', () => {
 });
 
 describe('PATCH /cart/add', () => {
-  test('Should add new item to cart and cart length should be 2 and should return correct products and isDifferent false', async () => {
+  test('should add new item to cart and cart length should be 2 and should return correct products and isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -203,7 +203,7 @@ describe('PATCH /cart/add', () => {
     expect(cart[1].product.updatedAt).toBeDefined();
   });
 
-  test('Should add new item to cart and cart length should be 1 and isDifferent true if product of first item is deleted', async () => {
+  test('should add new item to cart and cart length should be 1 and isDifferent true if product of first item is deleted', async () => {
     await request(app)
       .delete(`/products/${productThree._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -244,7 +244,7 @@ describe('PATCH /cart/add', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should add 1 quantity to existing item and quantity should equals 3 and get isDifferent false', async () => {
+  test('should add 1 quantity to existing item and quantity should equals 3 and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -293,7 +293,7 @@ describe('PATCH /cart/add', () => {
     ]);
   });
 
-  test('Should add only 1 quantity to item in cart if total quantity of product in db is 3', async () => {
+  test('should add only 1 quantity to item in cart if total quantity of product in db is 3', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -342,7 +342,7 @@ describe('PATCH /cart/add', () => {
     ]);
   });
 
-  test('Should get 403 if cart items number is 50 or higher', async () => {
+  test('should get 403 if cart items number is 50 or higher', async () => {
     jest.setTimeout(15000);
     for (let i = 0; i < 48; i += 1) {
       const productId = new mongoose.Types.ObjectId();
@@ -374,7 +374,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test(`Should get 403 if user is an owner`, async () => {
+  test(`should get 403 if user is an owner`, async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -386,7 +386,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 404 if given productId does not exists in db', async () => {
+  test('should get 404 if given productId does not exists in db', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -398,7 +398,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 400 if given quantity is lower than 1', async () => {
+  test('should get 400 if given quantity is lower than 1', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -410,7 +410,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 400 if given no quantity is given', async () => {
+  test('should get 400 if given no quantity is given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -422,7 +422,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 400 if no product is given', async () => {
+  test('should get 400 if no product is given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -434,7 +434,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 400 if no data are given', async () => {
+  test('should get 400 if no data are given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -446,7 +446,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -458,7 +458,7 @@ describe('PATCH /cart/add', () => {
     });
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
       .send({ quantity: 1, product: productOne._id })
@@ -471,7 +471,7 @@ describe('PATCH /cart/add', () => {
 });
 
 describe('PATCH /cart/:itemId/update', () => {
-  test('Should increment quantity of first cart item and get correct cart and get isDifferent false', async () => {
+  test('should increment quantity of first cart item and get correct cart and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -504,7 +504,7 @@ describe('PATCH /cart/:itemId/update', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should decrement quantity of first cart item and get isDifferent false', async () => {
+  test('should decrement quantity of first cart item and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -537,7 +537,7 @@ describe('PATCH /cart/:itemId/update', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should update quantity of first cart item to 20 and get isDifferent false', async () => {
+  test('should update quantity of first cart item to 20 and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -570,7 +570,7 @@ describe('PATCH /cart/:itemId/update', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should update quantity of first cart item to product quantity if passed quantity is greater than product quantity in db', async () => {
+  test('should update quantity of first cart item to product quantity if passed quantity is greater than product quantity in db', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -601,7 +601,7 @@ describe('PATCH /cart/:itemId/update', () => {
     ]);
   });
 
-  test('Should NOT update quantity of cart item if given quantity is lower than 1 and get isDifferent false', async () => {
+  test('should NOT update quantity of cart item if given quantity is lower than 1 and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -632,7 +632,7 @@ describe('PATCH /cart/:itemId/update', () => {
     ]);
   });
 
-  test('Should return the same quantity of cart item if passed quantity equals to cart item quantity and get isDifferen false', async () => {
+  test('should return the same quantity of cart item if passed quantity equals to cart item quantity and get isDifferen false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -663,7 +663,7 @@ describe('PATCH /cart/:itemId/update', () => {
     ]);
   });
 
-  test('Should NOT increment quantity of cart item if product quantity in db equals to cart item quantity and get isDifferent false', async () => {
+  test('should NOT increment quantity of cart item if product quantity in db equals to cart item quantity and get isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -694,7 +694,7 @@ describe('PATCH /cart/:itemId/update', () => {
     ]);
   });
 
-  test('Should NOT decrement quantity of cart item if cart item quantity equals to 1', async () => {
+  test('should NOT decrement quantity of cart item if cart item quantity equals to 1', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -725,7 +725,7 @@ describe('PATCH /cart/:itemId/update', () => {
     ]);
   });
 
-  test('Should NOT update quantity of cart item if given quantity is passed value is falsy after parsing to int', async () => {
+  test('should NOT update quantity of cart item if given quantity is passed value is falsy after parsing to int', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemOneId}/update?action=${updateCartActions.NUMBER}&quantity=0`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -736,7 +736,7 @@ describe('PATCH /cart/:itemId/update', () => {
     });
   });
 
-  test('Should NOT update cart item quantity if no action is given', async () => {
+  test('should NOT update cart item quantity if no action is given', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/update`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -747,7 +747,7 @@ describe('PATCH /cart/:itemId/update', () => {
     });
   });
 
-  test('Should NOT update cart item quantity if no action is not correct', async () => {
+  test('should NOT update cart item quantity if no action is not correct', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/update?action=incorrectAction`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -758,7 +758,7 @@ describe('PATCH /cart/:itemId/update', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/update?action=${updateCartActions.INCREMENT}`)
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -769,7 +769,7 @@ describe('PATCH /cart/:itemId/update', () => {
     });
   });
 
-  test('Should get 401 if user in unauthenticated', async () => {
+  test('should get 401 if user in unauthenticated', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/update?action=${updateCartActions.INCREMENT}`)
       .expect(401);
@@ -781,7 +781,7 @@ describe('PATCH /cart/:itemId/update', () => {
 });
 
 describe('PATCH /cart/:itemId/remove', () => {
-  test('Should remove first item from cart and get only second item from initial cart and isDifferent false', async () => {
+  test('should remove first item from cart and get only second item from initial cart and isDifferent false', async () => {
     const {
       body: { cart, isDifferent },
     } = await request(app)
@@ -815,7 +815,7 @@ describe('PATCH /cart/:itemId/remove', () => {
     expect(cart[0].product.updatedAt).toBeDefined();
   });
 
-  test('Should remove first item from cart and get empty cart and isDifferent true if product of second item is deleted before', async () => {
+  test('should remove first item from cart and get empty cart and isDifferent true if product of second item is deleted before', async () => {
     await request(app)
       .delete(`/products/${productFour._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -832,7 +832,7 @@ describe('PATCH /cart/:itemId/remove', () => {
     expect(cart).toEqual([]);
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch(`/cart/${cartItemTwoId}/remove`)
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -843,7 +843,7 @@ describe('PATCH /cart/:itemId/remove', () => {
     });
   });
 
-  test('Should get 401 if user in unauthenticated', async () => {
+  test('should get 401 if user in unauthenticated', async () => {
     const { body } = await request(app).patch(`/cart/${cartItemTwoId}/remove`).expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -852,7 +852,7 @@ describe('PATCH /cart/:itemId/remove', () => {
 });
 
 describe('PATCH /cart/clear', () => {
-  test('Should clear user cart', async () => {
+  test('should clear user cart', async () => {
     await request(app)
       .patch('/cart/clear')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -862,7 +862,7 @@ describe('PATCH /cart/clear', () => {
     expect(cart).toHaveLength(0);
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/cart/clear')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -873,7 +873,7 @@ describe('PATCH /cart/clear', () => {
     });
   });
 
-  test('Should get 401 if user in unauthenticated', async () => {
+  test('should get 401 if user in unauthenticated', async () => {
     const { body } = await request(app).patch('/cart/clear').expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',

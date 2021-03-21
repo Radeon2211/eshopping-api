@@ -34,7 +34,7 @@ const uploadPhotoForProdOne = async (filename) => {
 };
 
 describe('POST /products', () => {
-  test('Should create product', async () => {
+  test('should create product', async () => {
     const data = {
       name: 'Mega mushrooms',
       description: 'Healthy mega mushrooms',
@@ -64,7 +64,7 @@ describe('POST /products', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const newProductId = new mongoose.Types.ObjectId();
     const data = {
       _id: newProductId,
@@ -89,7 +89,7 @@ describe('POST /products', () => {
     expect(product).toBeNull();
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const newProductId = new mongoose.Types.ObjectId();
     const data = {
       _id: newProductId,
@@ -113,7 +113,7 @@ describe('POST /products', () => {
 
 describe('GET /products', () => {
   describe('Default behaviours', () => {
-    test('Should fetch all four products, starting from newest and no skip and no limit by default', async () => {
+    test('should fetch all four products, starting from newest and no skip and no limit by default', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products').expect(200);
@@ -191,7 +191,7 @@ describe('GET /products', () => {
       expect(products[3].updatedAt).toBeDefined();
     });
 
-    test('Should fetch default max 10 products if in db are more than 10 products', async () => {
+    test('should fetch default max 10 products if in db are more than 10 products', async () => {
       for (let i = 0; i < 10; i += 1) {
         const product = {
           name: 'Product name',
@@ -223,7 +223,7 @@ describe('GET /products', () => {
   });
 
   describe('Name param', () => {
-    test('Should fetch only knife if name param is "knife"', async () => {
+    test('should fetch only knife if name param is "knife"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=knife`).expect(200);
@@ -253,7 +253,7 @@ describe('GET /products', () => {
       ]);
     });
 
-    test('Should fetch only knife and mushrooms if name param is "r"', async () => {
+    test('should fetch only knife and mushrooms if name param is "r"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=r`).expect(200);
@@ -296,7 +296,7 @@ describe('GET /products', () => {
       ]);
     });
 
-    test('Should fetch nothing if name param is "abababa" so it completely does not match to anything', async () => {
+    test('should fetch nothing if name param is "abababa" so it completely does not match to anything', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?name=abababa`).expect(200);
@@ -308,7 +308,7 @@ describe('GET /products', () => {
   });
 
   describe('Condition param', () => {
-    test('Should fetch only products with condition "new"', async () => {
+    test('should fetch only products with condition "new"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=new').expect(200);
@@ -324,7 +324,7 @@ describe('GET /products', () => {
       expect(products.every((product) => product.condition === 'new')).toEqual(true);
     });
 
-    test('Should fetch only products with condition "used"', async () => {
+    test('should fetch only products with condition "used"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=used').expect(200);
@@ -340,7 +340,7 @@ describe('GET /products', () => {
       expect(products.every((product) => product.condition === 'used')).toEqual(true);
     });
 
-    test('Should fetch only products with condition "not_applicable"', async () => {
+    test('should fetch only products with condition "not_applicable"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=not_applicable').expect(200);
@@ -356,7 +356,7 @@ describe('GET /products', () => {
       expect(products.every(({ condition }) => condition === 'not_applicable')).toEqual(true);
     });
 
-    test('Should fetch nothing if passed condition is different than "new", "used" and "not_applicable"', async () => {
+    test('should fetch nothing if passed condition is different than "new", "used" and "not_applicable"', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?condition=sth_different').expect(200);
@@ -374,7 +374,7 @@ describe('GET /products', () => {
   });
 
   describe('Sort param', () => {
-    test('Should sort products by name descending', async () => {
+    test('should sort products by name descending', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=name:desc').expect(200);
@@ -393,7 +393,7 @@ describe('GET /products', () => {
       }
     });
 
-    test('Should sort products by name ascending', async () => {
+    test('should sort products by name ascending', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=name:asc').expect(200);
@@ -412,7 +412,7 @@ describe('GET /products', () => {
       }
     });
 
-    test('Should sort products by price descending', async () => {
+    test('should sort products by price descending', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=price:desc').expect(200);
@@ -431,7 +431,7 @@ describe('GET /products', () => {
       }
     });
 
-    test('Should sort products by price ascending', async () => {
+    test('should sort products by price ascending', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?sortBy=price:asc').expect(200);
@@ -450,7 +450,7 @@ describe('GET /products', () => {
       }
     });
 
-    test('Should sort products by price descending and get these with minimum $10 price', async () => {
+    test('should sort products by price descending and get these with minimum $10 price', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?sortBy=price:desc&minPrice=10`).expect(200);
@@ -471,7 +471,7 @@ describe('GET /products', () => {
       expect(products.every(({ price }) => price >= 10)).toEqual(true);
     });
 
-    test('Should sort products by price ascending and get these with maximum $15 price', async () => {
+    test('should sort products by price ascending and get these with maximum $15 price', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?sortBy=price:asc&maxPrice=15`).expect(200);
@@ -494,7 +494,7 @@ describe('GET /products', () => {
   });
 
   describe('Limit and p params', () => {
-    test('Should fetch three products (newest by default) if limit is 3', async () => {
+    test('should fetch three products (newest by default) if limit is 3', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get('/products?limit=3').expect(200);
@@ -557,7 +557,7 @@ describe('GET /products', () => {
       expect(products[2].updatedAt).toBeDefined();
     });
 
-    test('Should fetch oldest product, and 4 as productCount if p is 4 and limit 1', async () => {
+    test('should fetch oldest product, and 4 as productCount if p is 4 and limit 1', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?limit=1&p=4`).expect(200);
@@ -587,7 +587,7 @@ describe('GET /products', () => {
       ]);
     });
 
-    test('Should fetch two oldest products, and 4 as productCount if p is 2 and limit 2', async () => {
+    test('should fetch two oldest products, and 4 as productCount if p is 2 and limit 2', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app).get(`/products?limit=2&p=2`).expect(200);
@@ -632,7 +632,7 @@ describe('GET /products', () => {
   });
 
   describe('Page param', () => {
-    test(`Should fetch all products expect of logged in user's product if page is ALL_PRODUCTS`, async () => {
+    test(`should fetch all products expect of logged in user's product if page is ALL_PRODUCTS`, async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app)
@@ -651,7 +651,7 @@ describe('GET /products', () => {
       expect(products.every(({ seller }) => seller.username !== userOne.username));
     });
 
-    test('Should fetch all products of logged in user if page is MY_PRODUCTS', async () => {
+    test('should fetch all products of logged in user if page is MY_PRODUCTS', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app)
@@ -670,7 +670,7 @@ describe('GET /products', () => {
       expect(products.every(({ seller }) => seller.username === userOne.username));
     });
 
-    test('Should fetch all products of user with passed username', async () => {
+    test('should fetch all products of user with passed username', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app)
@@ -689,7 +689,7 @@ describe('GET /products', () => {
       expect(products.every(({ seller }) => seller.username === userTwo.username));
     });
 
-    test('Should fetch nothing if seller with passed username does not exist and page is USER_PRODUCTS', async () => {
+    test('should fetch nothing if seller with passed username does not exist and page is USER_PRODUCTS', async () => {
       const {
         body: { products, productCount, productPrices },
       } = await request(app)
@@ -705,7 +705,7 @@ describe('GET /products', () => {
 });
 
 describe('GET /products/:id', () => {
-  test('Should fetch correct product by id', async () => {
+  test('should fetch correct product by id', async () => {
     const {
       body: { product },
     } = await request(app).get(`/products/${productOne._id}`).expect(200);
@@ -728,7 +728,7 @@ describe('GET /products/:id', () => {
     expect(product.updatedAt).toBeDefined();
   });
 
-  test('Should get 404 if product with passed ObjectId does not exist', async () => {
+  test('should get 404 if product with passed ObjectId does not exist', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
     const { body } = await request(app).get(`/products/${incorrectId}`).expect(404);
     expect(body).toEqual({
@@ -736,14 +736,14 @@ describe('GET /products/:id', () => {
     });
   });
 
-  test('Should get 500 if passed id not correct ObjectId', async () => {
+  test('should get 500 if passed id not correct ObjectId', async () => {
     const { body } = await request(app).get('/products/incorrectId').expect(500);
     expect(body.kind).toEqual('ObjectId');
   });
 });
 
 describe('PATCH /products/:id', () => {
-  test('Should update every value of product which is possible', async () => {
+  test('should update every value of product which is possible', async () => {
     const data = {
       name: 'Cool mushrooms',
       description: 'Cool healthy mushrooms',
@@ -778,7 +778,7 @@ describe('PATCH /products/:id', () => {
     expect(product.updatedAt).toBeDefined();
   });
 
-  test('Should NOT update product if user is not a seller', async () => {
+  test('should NOT update product if user is not a seller', async () => {
     const { body } = await request(app)
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -795,7 +795,7 @@ describe('PATCH /products/:id', () => {
     });
   });
 
-  test('Should get 404 if passed id is not valid ObjectId', async () => {
+  test('should get 404 if passed id is not valid ObjectId', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
 
     const { body } = await request(app)
@@ -811,7 +811,7 @@ describe('PATCH /products/:id', () => {
     });
   });
 
-  test('Should get 500 if passed id is not valid id (but not ObjectId)', async () => {
+  test('should get 500 if passed id is not valid id (but not ObjectId)', async () => {
     const { body } = await request(app)
       .patch('/products/incorrectId')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -823,7 +823,7 @@ describe('PATCH /products/:id', () => {
     expect(body.kind).toEqual('ObjectId');
   });
 
-  test('Should get 400 if no valid property key is passed', async () => {
+  test('should get 400 if no valid property key is passed', async () => {
     const { body } = await request(app)
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -840,7 +840,7 @@ describe('PATCH /products/:id', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -857,7 +857,7 @@ describe('PATCH /products/:id', () => {
     expect(product.name).toEqual(productOne.name);
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .patch(`/products/${productOne._id}`)
       .send({
@@ -875,7 +875,7 @@ describe('PATCH /products/:id', () => {
 });
 
 describe('DELETE /products/:id', () => {
-  test('Should seller delete product', async () => {
+  test('should seller delete product', async () => {
     await request(app)
       .delete(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -885,7 +885,7 @@ describe('DELETE /products/:id', () => {
     expect(product).toBeNull();
   });
 
-  test(`Should admin delete other user's product`, async () => {
+  test(`should admin delete other user's product`, async () => {
     await request(app)
       .delete(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
@@ -895,7 +895,7 @@ describe('DELETE /products/:id', () => {
     expect(product).toBeNull();
   });
 
-  test(`Should NOT delete other user's product`, async () => {
+  test(`should NOT delete other user's product`, async () => {
     const { body } = await request(app)
       .delete(`/products/${productOne._id}`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -909,7 +909,7 @@ describe('DELETE /products/:id', () => {
     });
   });
 
-  test('Should get 404 if passed incorrect ObjectId', async () => {
+  test('should get 404 if passed incorrect ObjectId', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
 
     const { body } = await request(app)
@@ -922,7 +922,7 @@ describe('DELETE /products/:id', () => {
     });
   });
 
-  test('Should get 500 if passed incorrect id (but not ObjectId)', async () => {
+  test('should get 500 if passed incorrect id (but not ObjectId)', async () => {
     const { body } = await request(app)
       .delete('/products/incorrectId')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -931,7 +931,7 @@ describe('DELETE /products/:id', () => {
     expect(body.kind).toEqual('ObjectId');
   });
 
-  test('Should get 401 if user has staus pending', async () => {
+  test('should get 401 if user has staus pending', async () => {
     await User.findByIdAndUpdate(userOne._id, { status: 'pending' });
 
     const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
@@ -943,7 +943,7 @@ describe('DELETE /products/:id', () => {
     expect(product).not.toBeNull();
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
     expect(body).toEqual({
       message: 'This route is blocked for you',
@@ -955,7 +955,7 @@ describe('DELETE /products/:id', () => {
 });
 
 describe('POST /products/:id/photo', () => {
-  test('Should upload photo for first product', async () => {
+  test('should upload photo for first product', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const product = await Product.findById(productOne._id).lean();
@@ -972,21 +972,21 @@ describe('POST /products/:id/photo', () => {
     expect(product.photo).toBeInstanceOf(Binary);
   });
 
-  test('Should upload photo for first product if it has size almost maximum', async () => {
+  test('should upload photo for first product if it has size almost maximum', async () => {
     await uploadPhotoForProdOne('almost-max-size.jpg');
 
     const product = await Product.findById(productOne._id).lean();
     expect(product.photo).toBeInstanceOf(Binary);
   });
 
-  test('Should NOT upload photo for first product if it has size more than maximum', async () => {
+  test('should NOT upload photo for first product if it has size more than maximum', async () => {
     await uploadPhotoForProdOne('more-than-max-size.jpg');
 
     const product = await Product.findById(productOne._id).lean();
     expect(product.photo).toBeUndefined();
   });
 
-  test('Should NOT upload photo for first product by not a seller', async () => {
+  test('should NOT upload photo for first product by not a seller', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
@@ -1001,7 +1001,7 @@ describe('POST /products/:id/photo', () => {
     });
   });
 
-  test('Should NOT upload photo if extension is other than jpg/png', async () => {
+  test('should NOT upload photo if extension is other than jpg/png', async () => {
     const { body } = await uploadPhotoForProdOne('dancing-mushroom.gif');
 
     expect(body).toEqual({
@@ -1012,7 +1012,7 @@ describe('POST /products/:id/photo', () => {
     expect(product.photo).toBeUndefined();
   });
 
-  test('Should get 404 if product with passed ObjectId does not exist', async () => {
+  test('should get 404 if product with passed ObjectId does not exist', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
 
     const { body } = await request(app)
@@ -1026,7 +1026,7 @@ describe('POST /products/:id/photo', () => {
     });
   });
 
-  test('Should get 500 if passed id is not correct ObjectId', async () => {
+  test('should get 500 if passed id is not correct ObjectId', async () => {
     const { body } = await request(app)
       .post('/products/incorrectId/photo')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1036,7 +1036,7 @@ describe('POST /products/:id/photo', () => {
     expect(body.kind).toEqual('ObjectId');
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
@@ -1051,7 +1051,7 @@ describe('POST /products/:id/photo', () => {
     expect(product).not.toBeNull();
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
       .attach('photo', 'tests/fixtures/mushrooms.jpg')
@@ -1067,7 +1067,7 @@ describe('POST /products/:id/photo', () => {
 });
 
 describe('GET /products/:id/photo', () => {
-  test('Should get product photo', async () => {
+  test('should get product photo', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
@@ -1078,7 +1078,7 @@ describe('GET /products/:id/photo', () => {
     expect(body).toEqual(expect.any(Buffer));
   });
 
-  test('Should get 404 if product with given ObjectId does not exist', async () => {
+  test('should get 404 if product with given ObjectId does not exist', async () => {
     const incorrectId = new mongoose.Types.ObjectId();
 
     const { body } = await request(app)
@@ -1091,14 +1091,14 @@ describe('GET /products/:id/photo', () => {
     });
   });
 
-  test('Should get 500 if given ID is not correct ObjectId', async () => {
+  test('should get 500 if given ID is not correct ObjectId', async () => {
     await request(app)
       .get('/products/incorrectId/photo')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(500);
   });
 
-  test('Should get 404 if product with given ObjectId does not have any photo', async () => {
+  test('should get 404 if product with given ObjectId does not have any photo', async () => {
     const { body } = await request(app)
       .get(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1111,7 +1111,7 @@ describe('GET /products/:id/photo', () => {
 });
 
 describe('DELETE /products/:id/photo', () => {
-  test('Should seller delete product photo', async () => {
+  test('should seller delete product photo', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
@@ -1132,7 +1132,7 @@ describe('DELETE /products/:id/photo', () => {
     });
   });
 
-  test(`Should admin delete other user's product photo`, async () => {
+  test(`should admin delete other user's product photo`, async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
@@ -1144,7 +1144,7 @@ describe('DELETE /products/:id/photo', () => {
     expect(product.photo).toBeUndefined();
   });
 
-  test('Should get 404 if product with passed ObjectId does not exist', async () => {
+  test('should get 404 if product with passed ObjectId does not exist', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const incorrectId = new mongoose.Types.ObjectId();
@@ -1162,7 +1162,7 @@ describe('DELETE /products/:id/photo', () => {
     });
   });
 
-  test('Should get 500 if passed ID is not correct ObjectId', async () => {
+  test('should get 500 if passed ID is not correct ObjectId', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     await request(app)
@@ -1174,7 +1174,7 @@ describe('DELETE /products/:id/photo', () => {
     expect(product.photo).toBeInstanceOf(Binary);
   });
 
-  test('Should get 404 if product photo does not exist', async () => {
+  test('should get 404 if product photo does not exist', async () => {
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
@@ -1185,7 +1185,7 @@ describe('DELETE /products/:id/photo', () => {
     });
   });
 
-  test(`Should get 403 if user is trying to delete other user's product photo`, async () => {
+  test(`should get 403 if user is trying to delete other user's product photo`, async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
@@ -1201,7 +1201,7 @@ describe('DELETE /products/:id/photo', () => {
     });
   });
 
-  test('Should get 401 if user has status pending', async () => {
+  test('should get 401 if user has status pending', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
@@ -1218,7 +1218,7 @@ describe('DELETE /products/:id/photo', () => {
     expect(product.photo).toBeInstanceOf(Binary);
   });
 
-  test('Should get 401 if user is unauthenticated', async () => {
+  test('should get 401 if user is unauthenticated', async () => {
     await uploadPhotoForProdOne('mushrooms.jpg');
 
     const { body } = await request(app)
