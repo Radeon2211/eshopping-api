@@ -17,6 +17,8 @@ const {
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,
   verificationCodeTypes,
+  envModes,
+  userStatuses,
 } = require('../shared/constants');
 const {
   updateUserCart,
@@ -38,7 +40,7 @@ router.post('/users', signupLimiter, async (req, res) => {
   try {
     user = new User({
       ...req.body,
-      status: 'pending',
+      status: userStatuses.PENDING,
       cart: [],
       tokens: [],
       isAdmin: undefined,
@@ -49,12 +51,12 @@ router.post('/users', signupLimiter, async (req, res) => {
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.ACCOUNT_ACTIVATION,
     );
-    if (process.env.MODE !== 'testing') {
+    if (process.env.MODE !== envModes.TESTING) {
       await sendAccountVerificationEmail(user.email, user.username, verificationLink);
     }
 
     const token = await user.generateAuthToken();
-    if (process.env.MODE === 'production') {
+    if (process.env.MODE === envModes.PRODUCTION) {
       res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
     } else {
       res.cookie('token', token, { httpOnly: true });
@@ -75,7 +77,7 @@ router.post('/users/login', loginLimiter, async (req, res) => {
     const isCartDifferent = await updateUserCart(user, user.cart);
 
     const token = await user.generateAuthToken();
-    if (process.env.MODE === 'production') {
+    if (process.env.MODE === envModes.PRODUCTION) {
       res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
     } else {
       res.cookie('token', token, { httpOnly: true });
@@ -104,7 +106,7 @@ router.post(
   authPending,
   async (req, res) => {
     try {
-      if (req.user.status === 'active') {
+      if (req.user.status === userStatuses.ACTIVE) {
         return res.status(400).send({
           message: 'Your account is already active',
         });
@@ -113,7 +115,7 @@ router.post(
       const verificationLink = await req.user.generateVerificationCode(
         verificationCodeTypes.ACCOUNT_ACTIVATION,
       );
-      if (process.env.MODE !== 'testing') {
+      if (process.env.MODE !== envModes.TESTING) {
         await sendAccountVerificationEmail(req.user.email, req.user.username, verificationLink);
       }
 
@@ -138,7 +140,7 @@ router.get('/users/:id/verify-account/:code', verificationLinkLimiter, async (re
       });
     }
 
-    user.status = 'active';
+    user.status = userStatuses.ACTIVE;
     await user.save();
     await verificationCode.remove();
 
@@ -170,7 +172,7 @@ router.post('/users/request-for-reset-password', resetPasswordRequestLimiter, as
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.RESET_PASSWORD,
     );
-    if (process.env.MODE !== 'testing') {
+    if (process.env.MODE !== envModes.TESTING) {
       await sendResetPasswordVerificationEmail(user.email, verificationLink);
     }
 
@@ -200,7 +202,7 @@ router.get('/users/:id/reset-password/:code', verificationLinkLimiter, async (re
     });
     user.password = newPassword;
 
-    if (process.env.MODE !== 'testing') {
+    if (process.env.MODE !== envModes.TESTING) {
       await sendNewPasswordEmail(user.email, newPassword);
     }
 
@@ -286,7 +288,7 @@ router.patch('/users/me/email', changeEmailLimiter, authActive, async (req, res)
       verificationCodeTypes.CHANGE_EMAIL,
       req.body.email,
     );
-    if (process.env.MODE !== 'testing') {
+    if (process.env.MODE !== envModes.TESTING) {
       await sendChangeEmailVerificationEmail(req.body.email, verificationLink);
     }
     res.send();
@@ -337,7 +339,7 @@ router.patch('/users/add-admin', authActive, async (req, res) => {
     if (req.body.email === req.user.email) {
       return res.status(400).send({ message: 'You are already an admin' });
     }
-    if (user.status === 'pending') {
+    if (user.status === userStatuses.PENDING) {
       return res.status(400).send({ message: 'This user has not activated the account yet' });
     }
     if (user.isAdmin) {

@@ -6,7 +6,12 @@ const { v4: uuidv4 } = require('uuid');
 const uniqueValidator = require('mongoose-beautiful-unique-validation');
 const Product = require('./productModel');
 const VerificationCode = require('./verificationCodeModel');
-const { MyError, DELIVERY_ADDRESS, verificationCodeTypes } = require('../shared/constants');
+const {
+  MyError,
+  DELIVERY_ADDRESS,
+  verificationCodeTypes,
+  userStatuses,
+} = require('../shared/constants');
 
 const userSchema = new mongoose.Schema(
   {
@@ -55,7 +60,7 @@ const userSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'active'],
+      enum: [userStatuses.PENDING, userStatuses.ACTIVE],
     },
     cart: [
       {

@@ -4,11 +4,18 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sender = 'eshopping-app@wp.pl';
 
+const emailTemplates = {
+  ACCOUNT_VERIFICATION: 'd-4ca9c74361564fa49829c72c5d157ee2',
+  RESET_PASSWORD_VERIFICATION: 'd-11a9e7ce91cc4589a47a6f79025cf448',
+  NEW_PASSWORD: 'd-d00db33ea528414998b826cb5dc77d56',
+  CHANGE_EMAIL_VERIFICATION: 'd-7d32c6c485364807933c14cf78fba02d',
+};
+
 const sendAccountVerificationEmail = async (email, username, verificationLink) => {
   await sgMail.send({
     to: email,
     from: sender,
-    templateId: 'd-4ca9c74361564fa49829c72c5d157ee2',
+    templateId: emailTemplates.ACCOUNT_VERIFICATION,
     dynamicTemplateData: {
       username,
       verificationLink,
@@ -21,7 +28,7 @@ const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
   await sgMail.send({
     to: email,
     from: sender,
-    templateId: 'd-11a9e7ce91cc4589a47a6f79025cf448',
+    templateId: emailTemplates.RESET_PASSWORD_VERIFICATION,
     dynamicTemplateData: {
       verificationLink,
     },
@@ -32,7 +39,7 @@ const sendNewPasswordEmail = async (email, newPassword) => {
   await sgMail.send({
     to: email,
     from: sender,
-    templateId: 'd-d00db33ea528414998b826cb5dc77d56',
+    templateId: emailTemplates.NEW_PASSWORD,
     dynamicTemplateData: {
       newPassword,
     },
@@ -43,7 +50,7 @@ const sendChangeEmailVerificationEmail = async (email, verificationLink) => {
   await sgMail.send({
     to: email,
     from: sender,
-    templateId: 'd-7d32c6c485364807933c14cf78fba02d',
+    templateId: emailTemplates.CHANGE_EMAIL_VERIFICATION,
     dynamicTemplateData: {
       verificationLink,
     },

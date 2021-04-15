@@ -16,7 +16,12 @@ const {
   productFour,
   setupDatabase,
 } = require('./fixtures/db');
-const { pages, productConditions } = require('../src/shared/constants');
+const {
+  pages,
+  productConditions,
+  userStatuses,
+  authMiddlewaresErrorMessage,
+} = require('../src/shared/constants');
 
 const allProducts = [productOne, productTwo, productThree, productFour];
 const allProductsPrices = allProducts.map(({ price }) => price);
@@ -82,7 +87,7 @@ describe('POST /products', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(newProductId).lean();
@@ -103,7 +108,7 @@ describe('POST /products', () => {
     const { body } = await request(app).post('/products').send(data).expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(newProductId).lean();
@@ -858,7 +863,7 @@ describe('PATCH /products/:id', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -874,7 +879,7 @@ describe('PATCH /products/:id', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -940,11 +945,11 @@ describe('DELETE /products/:id', () => {
   });
 
   test('should get 401 if user has staus pending', async () => {
-    await User.findByIdAndUpdate(userOne._id, { status: 'pending' });
+    await User.findByIdAndUpdate(userOne._id, { status: userStatuses.PENDING });
 
     const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -954,7 +959,7 @@ describe('DELETE /products/:id', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -1052,7 +1057,7 @@ describe('POST /products/:id/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -1066,7 +1071,7 @@ describe('POST /products/:id/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -1219,7 +1224,7 @@ describe('DELETE /products/:id/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();
@@ -1235,7 +1240,7 @@ describe('DELETE /products/:id/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const product = await Product.findById(productOne._id).lean();

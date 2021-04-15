@@ -4,7 +4,7 @@ const User = require('../../src/models/userModel');
 const Product = require('../../src/models/productModel');
 const Order = require('../../src/models/orderModel');
 const VerificationCode = require('../../src/models/verificationCodeModel');
-const { productConditions } = require('../../src/shared/constants');
+const { productConditions, userStatuses } = require('../../src/shared/constants');
 
 const userOneId = new mongoose.Types.ObjectId();
 const userTwoId = new mongoose.Types.ObjectId();
@@ -42,7 +42,7 @@ const userOne = {
     email: true,
     phone: true,
   },
-  status: 'active',
+  status: userStatuses.ACTIVE,
   cart: [
     {
       _id: cartItemTwoId,
@@ -79,7 +79,7 @@ const userTwo = {
     email: false,
     phone: false,
   },
-  status: 'active',
+  status: userStatuses.ACTIVE,
   cart: [
     {
       _id: cartItemOneId,
@@ -112,7 +112,7 @@ const userThree = {
     phone: true,
   },
   isAdmin: true,
-  status: 'active',
+  status: userStatuses.ACTIVE,
   cart: [
     {
       _id: cartItemThreeId,
@@ -144,7 +144,7 @@ const userFour = {
     email: true,
     phone: true,
   },
-  status: 'pending',
+  status: userStatuses.PENDING,
   cart: [],
   tokens: [
     {

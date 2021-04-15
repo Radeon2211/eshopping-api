@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-// eslint-disable-next-line no-unused-vars
 const multer = require('multer');
 const sharp = require('sharp');
 const imagemin = require('imagemin');

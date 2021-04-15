@@ -1,5 +1,6 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { authMiddlewaresErrorMessage } = require('../src/shared/constants');
 const {
   userOne,
   userTwo,
@@ -309,14 +310,14 @@ describe('PATCH /transaction', () => {
         .expect(401);
 
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
 
     test('should get 401 if user is unauthenticated', async () => {
       const { body } = await request(app).patch('/transaction').expect(401);
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
   });

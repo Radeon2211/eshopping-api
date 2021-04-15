@@ -1,5 +1,18 @@
 const validator = require('validator');
 
+const authMiddlewaresErrorMessage = 'You do not have sufficient permissions';
+
+const envModes = {
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+  TESTING: 'testing',
+};
+
+const userStatuses = {
+  ACTIVE: 'active',
+  PENDING: 'pending',
+};
+
 const SELLER_USERNAME_POPULATE = {
   path: 'seller',
   select: 'username -_id',
@@ -113,6 +126,9 @@ const DELIVERY_ADDRESS = {
 };
 
 module.exports = {
+  authMiddlewaresErrorMessage,
+  envModes,
+  userStatuses,
   SELLER_USERNAME_POPULATE,
   BUYER_USERNAME_POPULATE,
   ORDER_SELLER_POPULATE,

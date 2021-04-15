@@ -18,7 +18,7 @@ const {
   productTwo,
   productFour,
 } = require('./fixtures/db');
-const { orderTypes } = require('../src/shared/constants');
+const { orderTypes, authMiddlewaresErrorMessage } = require('../src/shared/constants');
 const { getCorrectProduct } = require('../src/shared/utility');
 
 beforeEach(setupDatabase);
@@ -548,7 +548,7 @@ describe('POST /orders', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const orders = await Order.find().lean();
@@ -576,7 +576,7 @@ describe('POST /orders', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
 
     const orders = await Order.find().lean();
@@ -772,14 +772,14 @@ describe('GET /orders', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get(`/orders?type=${orderTypes.PLACED_ORDERS}`).expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -944,7 +944,7 @@ describe('GET /orders/:id', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
@@ -953,7 +953,7 @@ describe('GET /orders/:id', () => {
 
     const { body } = await request(app).get(`/orders/${orderOne._id}`).expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -1072,7 +1072,7 @@ describe('GET /orders/:id/:productId/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
@@ -1084,7 +1084,7 @@ describe('GET /orders/:id/:productId/photo', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });

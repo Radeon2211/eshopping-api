@@ -2,7 +2,7 @@ const moment = require('moment');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const VerificationCode = require('../models/verificationCodeModel');
-const { SELLER_USERNAME_POPULATE, CART_POPULATE } = require('./constants');
+const { SELLER_USERNAME_POPULATE, CART_POPULATE, userStatuses } = require('./constants');
 
 const createSortObject = (req) => {
   const sort = {};
@@ -221,7 +221,7 @@ const verificationCodeChecker = async (userId, codeQueryParams) => {
 
 const agendaRemoveExpiredUser = async () => {
   await User.deleteMany({
-    status: 'pending',
+    status: userStatuses.PENDING,
     createdAt: { $lte: moment().subtract(1, 'hour').toDate() },
   });
 };

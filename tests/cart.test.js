@@ -18,7 +18,11 @@ const {
   cartItemTwoId,
   cartItemThreeId,
 } = require('./fixtures/db');
-const { updateCartActions, productConditions } = require('../src/shared/constants');
+const {
+  updateCartActions,
+  productConditions,
+  authMiddlewaresErrorMessage,
+} = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
 
@@ -137,14 +141,14 @@ describe('GET /cart', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get('/cart').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -454,7 +458,7 @@ describe('PATCH /cart/add', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
@@ -465,7 +469,7 @@ describe('PATCH /cart/add', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -765,7 +769,7 @@ describe('PATCH /cart/:itemId/update', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
@@ -775,7 +779,7 @@ describe('PATCH /cart/:itemId/update', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -839,14 +843,14 @@ describe('PATCH /cart/:itemId/remove', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user in unauthenticated', async () => {
     const { body } = await request(app).patch(`/cart/${cartItemTwoId}/remove`).expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -869,14 +873,14 @@ describe('PATCH /cart/clear', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user in unauthenticated', async () => {
     const { body } = await request(app).patch('/cart/clear').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });

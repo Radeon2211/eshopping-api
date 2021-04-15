@@ -18,7 +18,11 @@ const {
   setupDatabase,
 } = require('./fixtures/db');
 const { getFullUser, agendaRemoveExpiredUser } = require('../src/shared/utility');
-const { verificationCodeTypes } = require('../src/shared/constants');
+const {
+  verificationCodeTypes,
+  userStatuses,
+  authMiddlewaresErrorMessage,
+} = require('../src/shared/constants');
 
 beforeEach(setupDatabase);
 
@@ -75,7 +79,7 @@ describe('POST /users', () => {
       _id: newUser._id.toJSON(),
       password: undefined,
       cart: [],
-      status: 'pending',
+      status: userStatuses.PENDING,
       createdAt: user.createdAt,
     });
     expect(user.createdAt).toBeDefined();
@@ -113,7 +117,7 @@ describe('POST /users', () => {
       isAdmin: undefined,
       tokens: undefined,
       cart: [],
-      status: 'pending',
+      status: userStatuses.PENDING,
       createdAt: user.createdAt,
     });
     expect(user.createdAt).not.toEqual('2020-11-11T11:11:11.911Z');
@@ -273,7 +277,7 @@ describe('POST /users/logout', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).post('/users/logout').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -333,7 +337,7 @@ describe('POST /users/send-account-verification-email', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).post('/users/send-account-verification-email').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -357,7 +361,7 @@ describe('GET /users/:id/verify-account/:code', () => {
       .expect('Location', process.env.FRONTEND_URL);
 
     const newUser = await User.findById(user._id).lean();
-    expect(newUser.status).toEqual('active');
+    expect(newUser.status).toEqual(userStatuses.ACTIVE);
 
     const verificationCodesAfter = await VerificationCode.find().lean();
     expect(verificationCodesAfter).toHaveLength(0);
@@ -386,7 +390,7 @@ describe('GET /users/:id/verify-account/:code', () => {
       .expect(400);
 
     const newUser = await User.findById(user._id).lean();
-    expect(newUser.status).toEqual('pending');
+    expect(newUser.status).toEqual(userStatuses.PENDING);
 
     const verificationCodesAfter = await VerificationCode.find().lean();
     expect(verificationCodesAfter).toHaveLength(2);
@@ -412,7 +416,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     });
 
     const newUser = await User.findById(user._id).lean();
-    expect(newUser.status).toEqual('pending');
+    expect(newUser.status).toEqual(userStatuses.PENDING);
 
     const verificationCodesAfter = await VerificationCode.find().lean();
     expect(verificationCodesAfter).toHaveLength(1);
@@ -440,7 +444,7 @@ describe('GET /users/:id/verify-account/:code', () => {
     });
 
     const newUser = await User.findById(user._id).lean();
-    expect(newUser.status).toEqual('pending');
+    expect(newUser.status).toEqual(userStatuses.PENDING);
 
     const verificationCodesAfter = await VerificationCode.find().lean();
     expect(verificationCodesAfter).toHaveLength(1);
@@ -775,7 +779,7 @@ describe('GET /users/me', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).get('/users/me').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -1107,7 +1111,7 @@ describe('PATCH /users/me', () => {
         .patch('/users/me')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
-          status: 'pending',
+          status: userStatuses.PENDING,
         })
         .expect(400);
 
@@ -1194,14 +1198,14 @@ describe('PATCH /users/me', () => {
         .expect(401);
 
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
 
     test('should get 401 if user is unauthenticated', async () => {
       const { body } = await request(app).get('/users/me').expect(401);
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
   });
@@ -1322,7 +1326,7 @@ describe('PATCH /users/me/email', () => {
         .expect(401);
 
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
 
@@ -1337,7 +1341,7 @@ describe('PATCH /users/me/email', () => {
         .expect(401);
 
       expect(body).toEqual({
-        message: 'This route is blocked for you',
+        message: authMiddlewaresErrorMessage,
       });
     });
   });
@@ -1590,14 +1594,14 @@ describe('PATCH /users/add-admin', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).patch('/users/add-admin').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -1666,14 +1670,14 @@ describe('PATCH /users/remove-admin', () => {
       .expect(401);
 
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).patch('/users/remove-admin').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
@@ -1754,7 +1758,7 @@ describe('DELETE /users/me', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app).delete('/users/me').expect(401);
     expect(body).toEqual({
-      message: 'This route is blocked for you',
+      message: authMiddlewaresErrorMessage,
     });
   });
 });
