@@ -1,6 +1,6 @@
 const request = require('supertest');
-const app = require('../src/app');
-const { authMiddlewaresErrorMessage } = require('../src/shared/constants');
+const app = require('../../src/app');
+const { authMiddlewaresErrorMessage } = require('../../src/shared/constants');
 const {
   userOne,
   userTwo,

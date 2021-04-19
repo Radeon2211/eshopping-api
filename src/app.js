@@ -11,8 +11,9 @@ require('./db/mongoose');
 const userRouter = require('./routers/userRouter');
 const productRouter = require('./routers/productRouter');
 const orderRouter = require('./routers/orderRouter');
+const testingRouter = require('./routers/testingRouter');
 const { unlessPhotoLimiter } = require('./middlewares/limiters');
-const { agendaRemoveExpiredUser } = require('./shared/utility');
+const { agendaRemoveExpiredUser, isDevOrE2EMode } = require('./shared/utility');
 const { envModes } = require('./shared/constants');
 
 const app = express();
@@ -30,7 +31,7 @@ app.use(xss());
 
 app.use(parameterPollution());
 
-if (process.env.MODE !== envModes.TESTING) {
+if (!isDevOrE2EMode()) {
   app.use(unlessPhotoLimiter);
 }
 
@@ -56,6 +57,9 @@ app.use(
 app.use(userRouter);
 app.use(productRouter);
 app.use(orderRouter);
+if (process.env.MODE === envModes.E2E_TESTING) {
+  app.use(testingRouter);
+}
 
 const agenda = new Agenda({
   db: {

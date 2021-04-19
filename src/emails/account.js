@@ -1,4 +1,5 @@
 const sgMail = require('@sendgrid/mail');
+const { isTestingMode } = require('../shared/utility');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -12,6 +13,7 @@ const emailTemplates = {
 };
 
 const sendAccountVerificationEmail = async (email, username, verificationLink) => {
+  if (isTestingMode()) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -25,6 +27,7 @@ const sendAccountVerificationEmail = async (email, username, verificationLink) =
 };
 
 const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
+  if (isTestingMode()) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -36,6 +39,7 @@ const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
 };
 
 const sendNewPasswordEmail = async (email, newPassword) => {
+  if (isTestingMode()) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -47,6 +51,7 @@ const sendNewPasswordEmail = async (email, newPassword) => {
 };
 
 const sendChangeEmailVerificationEmail = async (email, verificationLink) => {
+  if (isTestingMode()) return;
   await sgMail.send({
     to: email,
     from: sender,

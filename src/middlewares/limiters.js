@@ -1,52 +1,53 @@
 const rateLimit = require('express-rate-limit');
-const { envModes } = require('../shared/constants');
+const { isDevOrE2EMode } = require('../shared/utility');
 
-const developmentMaxLimit = 100;
+const devAndE2EMaxLimit = 200;
+const yieldMaxLimit = (limit) => (!isDevOrE2EMode() ? limit : devAndE2EMaxLimit);
 
 const unlessPhotoLimits = {
-  maxLimit: 40,
+  maxLimit: yieldMaxLimit(50),
   timeWindow: 30 * 1000,
   timeUnitNumber: '30',
 };
 
 const photoLimits = {
-  maxLimit: 150,
+  maxLimit: yieldMaxLimit(150),
   timeWindow: 30 * 1000,
   timeUnitNumber: '30',
 };
 
 const loginLimits = {
-  maxLimit: 8,
+  maxLimit: yieldMaxLimit(8),
   timeWindow: 30 * 60 * 1000,
   timeUnitNumber: '30',
 };
 
 const signupLimits = {
-  maxLimit: 4,
+  maxLimit: yieldMaxLimit(4),
   timeWindow: 40 * 60 * 1000,
   timeUnitNumber: '40',
 };
 
 const accountVerificationEmailLimits = {
-  maxLimit: 3,
+  maxLimit: yieldMaxLimit(3),
   timeWindow: 15 * 60 * 1000,
   timeUnitNumber: '15',
 };
 
 const verificationLinkLimits = {
-  maxLimit: 4,
+  maxLimit: yieldMaxLimit(4),
   timeWindow: 10 * 60 * 1000,
   timeUnitNumber: '10',
 };
 
 const resetPasswordLimits = {
-  maxLimit: 4,
+  maxLimit: yieldMaxLimit(4),
   timeWindow: 25 * 60 * 1000,
   timeUnitNumber: '25',
 };
 
 const changeEmailLimits = {
-  maxLimit: 3,
+  maxLimit: yieldMaxLimit(3),
   timeWindow: 30 * 60 * 1000,
   timeUnitNumber: '30',
 };
@@ -82,7 +83,7 @@ const photoLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: loginLimits.timeWindow,
-  max: process.env.MODE === envModes.DEVELOPMENT ? developmentMaxLimit : loginLimits.maxLimit,
+  max: loginLimits.maxLimit,
   message: {
     message: `Too many failed login attemps, please wait up to ${loginLimits.timeUnitNumber} minutes`,
   },
@@ -91,7 +92,7 @@ const loginLimiter = rateLimit({
 
 const signupLimiter = rateLimit({
   windowMs: signupLimits.timeWindow,
-  max: process.env.MODE === envModes.DEVELOPMENT ? developmentMaxLimit : signupLimits.maxLimit,
+  max: signupLimits.maxLimit,
   message: {
     message: `Too many signup attemps, please wait up to ${signupLimits.timeUnitNumber} minutes`,
   },
@@ -100,10 +101,7 @@ const signupLimiter = rateLimit({
 
 const accountVerificationEmailLimiter = rateLimit({
   windowMs: accountVerificationEmailLimits.timeWindow,
-  max:
-    process.env.MODE === envModes.DEVELOPMENT
-      ? developmentMaxLimit
-      : accountVerificationEmailLimits.maxLimit,
+  max: accountVerificationEmailLimits.maxLimit,
   message: {
     message: `Too many requests for sending verification email, please wait up to ${accountVerificationEmailLimits.timeUnitNumber} minutes`,
   },
@@ -112,10 +110,7 @@ const accountVerificationEmailLimiter = rateLimit({
 
 const verificationLinkLimiter = rateLimit({
   windowMs: verificationLinkLimits.timeWindow,
-  max:
-    process.env.MODE === envModes.DEVELOPMENT
-      ? developmentMaxLimit
-      : verificationLinkLimits.maxLimit,
+  max: verificationLinkLimits.maxLimit,
   message: {
     message: `Too many requests for account verification, please wait up to ${verificationLinkLimits.timeUnitNumber} minutes`,
   },
@@ -123,8 +118,7 @@ const verificationLinkLimiter = rateLimit({
 
 const resetPasswordRequestLimiter = rateLimit({
   windowMs: resetPasswordLimits.timeWindow,
-  max:
-    process.env.MODE === envModes.DEVELOPMENT ? developmentMaxLimit : resetPasswordLimits.maxLimit,
+  max: resetPasswordLimits.maxLimit,
   message: {
     message: `Too many requests for password reset, please wait up to ${resetPasswordLimits.timeUnitNumber} minutes`,
   },
@@ -133,7 +127,7 @@ const resetPasswordRequestLimiter = rateLimit({
 
 const changeEmailLimiter = rateLimit({
   windowMs: changeEmailLimits.timeWindow,
-  max: process.env.MODE === envModes.DEVELOPMENT ? developmentMaxLimit : changeEmailLimits.maxLimit,
+  max: changeEmailLimits.maxLimit,
   message: {
     message: `Too many requests for email address change, please wait up to ${changeEmailLimits.timeUnitNumber} minutes`,
   },

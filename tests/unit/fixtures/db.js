@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const User = require('../../src/models/userModel');
-const Product = require('../../src/models/productModel');
-const Order = require('../../src/models/orderModel');
-const VerificationCode = require('../../src/models/verificationCodeModel');
-const { productConditions, userStatuses } = require('../../src/shared/constants');
+const User = require('../../../src/models/userModel');
+const Product = require('../../../src/models/productModel');
+const Order = require('../../../src/models/orderModel');
+const VerificationCode = require('../../../src/models/verificationCodeModel');
+const { productConditions, userStatuses } = require('../../../src/shared/constants');
 
 const userOneId = new mongoose.Types.ObjectId();
 const userTwoId = new mongoose.Types.ObjectId();

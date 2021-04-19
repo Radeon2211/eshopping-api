@@ -2,7 +2,7 @@ const moment = require('moment');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const VerificationCode = require('../models/verificationCodeModel');
-const { SELLER_USERNAME_POPULATE, CART_POPULATE, userStatuses } = require('./constants');
+const { SELLER_USERNAME_POPULATE, CART_POPULATE, userStatuses, envModes } = require('./constants');
 
 const createSortObject = (req) => {
   const sort = {};
@@ -226,6 +226,12 @@ const agendaRemoveExpiredUser = async () => {
   });
 };
 
+const isDevOrE2EMode = () =>
+  process.env.MODE === envModes.DEVELOPMENT || process.env.MODE === envModes.E2E_TESTING;
+
+const isTestingMode = () =>
+  process.env.MODE === envModes.UNIT_TESTING || process.env.MODE === envModes.E2E_TESTING;
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
@@ -241,4 +247,6 @@ module.exports = {
   splitOrderProducts,
   verificationCodeChecker,
   agendaRemoveExpiredUser,
+  isDevOrE2EMode,
+  isTestingMode,
 };

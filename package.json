@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "env-cmd -f ./config/dev.env nodemon src/index.js",
-    "tests": "env-cmd -f ./config/test.env jest --watch --runInBand --testEnvironment=node"
+    "dev": "env-cmd -f ./config/dev.env nodemon --delay 1500ms src/index.js",
+    "test:e2e": "env-cmd -f ./config/e2eTest.env nodemon --delay 1500ms src/index.js",
+    "test:unit": "env-cmd -f ./config/unitTest.env jest --watch --runInBand --testEnvironment=node"
   },
   "author": "Radosław Mikrut",
   "license": "ISC",

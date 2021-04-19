@@ -2,9 +2,9 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { ObjectId } = require('mongoose').Types.ObjectId;
 const fs = require('fs');
-const app = require('../src/app');
-const Order = require('../src/models/orderModel');
-const Product = require('../src/models/productModel');
+const app = require('../../src/app');
+const Order = require('../../src/models/orderModel');
+const Product = require('../../src/models/productModel');
 const {
   userOne,
   userTwo,
@@ -18,8 +18,8 @@ const {
   productTwo,
   productFour,
 } = require('./fixtures/db');
-const { orderTypes, authMiddlewaresErrorMessage } = require('../src/shared/constants');
-const { getCorrectProduct } = require('../src/shared/utility');
+const { orderTypes, authMiddlewaresErrorMessage } = require('../../src/shared/constants');
+const { getCorrectProduct } = require('../../src/shared/utility');
 
 beforeEach(setupDatabase);
 
@@ -960,7 +960,7 @@ describe('GET /orders/:id', () => {
 
 describe('GET /orders/:id/:productId/photo', () => {
   test('should get a photo of first product of first order', async () => {
-    const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
+    const photoStream = fs.createReadStream('tests/unit/fixtures/mushrooms.jpg');
     const photoChunks = [];
     for await (const chunk of photoStream) {
       photoChunks.push(chunk);
@@ -1035,7 +1035,7 @@ describe('GET /orders/:id/:productId/photo', () => {
   });
 
   test('should get 403 when user is neither seller and a buyer of order', async () => {
-    const photoStream = fs.createReadStream('tests/fixtures/mushrooms.jpg');
+    const photoStream = fs.createReadStream('tests/unit/fixtures/mushrooms.jpg');
     const photoChunks = [];
     for await (const chunk of photoStream) {
       photoChunks.push(chunk);

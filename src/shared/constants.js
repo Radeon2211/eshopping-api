@@ -3,9 +3,10 @@ const validator = require('validator');
 const authMiddlewaresErrorMessage = 'You do not have sufficient permissions';
 
 const envModes = {
-  DEVELOPMENT: 'development',
-  PRODUCTION: 'production',
-  TESTING: 'testing',
+  DEVELOPMENT: 'DEVELOPMENT',
+  PRODUCTION: 'PRODUCTION',
+  UNIT_TESTING: 'UNIT_TESTING',
+  E2E_TESTING: 'E2E_TESTING',
 };
 
 const userStatuses = {

@@ -1,8 +1,44 @@
 const request = require('supertest');
-const app = require('../src/app');
+const app = require('../../src/app');
 const { userOne, userFour, productOne, setupDatabase } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
+
+describe('unlessPhotoLimiter', () => {
+  it('should get 429 after more than 50 requests', async () => {
+    for (let i = 0; i < 50; i += 1) {
+      await request(app)
+        .patch(`/products/${productOne._id}`)
+        .set('X-Forwarded-For', '192.168.1.20')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          quantity: i + 1,
+        })
+        .expect(200);
+    }
+    await request(app)
+      .patch(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.1.20')
+      .set('Cookie', [`token=${userOne.tokens[0].token}`])
+      .send({
+        quantity: 100,
+      })
+      .expect(429);
+  });
+
+  it('should NOT get 429 after 50 requests', async () => {
+    for (let i = 0; i < 50; i += 1) {
+      await request(app)
+        .patch(`/products/${productOne._id}`)
+        .set('X-Forwarded-For', '192.168.1.21')
+        .set('Cookie', [`token=${userOne.tokens[0].token}`])
+        .send({
+          quantity: i + 1,
+        })
+        .expect(200);
+    }
+  });
+});
 
 describe('loginLimiter', () => {
   it('should get 429 after more than 8 unsuccessful requests', async () => {
@@ -72,7 +108,7 @@ describe('photoLimiter', () => {
     await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg');
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg');
 
     for (let i = 0; i < 150; i += 1) {
       await request(app)

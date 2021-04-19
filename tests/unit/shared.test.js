@@ -1,11 +1,11 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const validateUUID = require('uuid-validate');
-const app = require('../src/app');
-const Product = require('../src/models/productModel');
-const Order = require('../src/models/orderModel');
-const User = require('../src/models/userModel');
-const VerificationCode = require('../src/models/verificationCodeModel');
+const app = require('../../src/app');
+const Product = require('../../src/models/productModel');
+const Order = require('../../src/models/orderModel');
+const User = require('../../src/models/userModel');
+const VerificationCode = require('../../src/models/verificationCodeModel');
 const {
   userOne,
   userTwo,
@@ -24,7 +24,7 @@ const {
   CART_POPULATE,
   MyError,
   verificationCodeTypes,
-} = require('../src/shared/constants');
+} = require('../../src/shared/constants');
 const {
   createSortObject,
   getCorrectProduct,
@@ -39,7 +39,7 @@ const {
   verifyItemsToBuy,
   splitOrderProducts,
   verificationCodeChecker,
-} = require('../src/shared/utility');
+} = require('../../src/shared/utility');
 
 beforeEach(setupDatabase);
 
@@ -228,7 +228,7 @@ describe('Utility', () => {
       await request(app)
         .post(`/products/${productOne._id}/photo`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .attach('photo', 'tests/fixtures/mushrooms.jpg')
+        .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
         .expect(200);
 
       const product = await Product.findById(productOne._id)
@@ -249,7 +249,7 @@ describe('Utility', () => {
       await request(app)
         .post(`/products/${productOne._id}/photo`)
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
-        .attach('photo', 'tests/fixtures/mushrooms.jpg')
+        .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
         .expect(200);
 
       await Product.updateOne({ _id: productOne._id }, { seller: new mongoose.Types.ObjectId() });

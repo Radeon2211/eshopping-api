@@ -2,9 +2,9 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { Binary } = require('mongodb');
-const app = require('../src/app');
-const Product = require('../src/models/productModel');
-const User = require('../src/models/userModel');
+const app = require('../../src/app');
+const Product = require('../../src/models/productModel');
+const User = require('../../src/models/userModel');
 const {
   userOne,
   userTwo,
@@ -21,7 +21,7 @@ const {
   productConditions,
   userStatuses,
   authMiddlewaresErrorMessage,
-} = require('../src/shared/constants');
+} = require('../../src/shared/constants');
 
 const allProducts = [productOne, productTwo, productThree, productFour];
 const allProductsPrices = allProducts.map(({ price }) => price);
@@ -34,7 +34,7 @@ const uploadPhotoForProdOne = async (filename) => {
   const response = await request(app)
     .post(`/products/${productOne._id}/photo`)
     .set('Cookie', [`token=${userOne.tokens[0].token}`])
-    .attach('photo', `tests/fixtures/${filename}`);
+    .attach('photo', `tests/unit/fixtures/${filename}`);
   return response;
 };
 
@@ -891,6 +891,7 @@ describe('DELETE /products/:id', () => {
   test('should seller delete product', async () => {
     await request(app)
       .delete(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.4.1')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(200);
 
@@ -901,6 +902,7 @@ describe('DELETE /products/:id', () => {
   test(`should admin delete other user's product`, async () => {
     await request(app)
       .delete(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.4.2')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .expect(200);
 
@@ -911,6 +913,7 @@ describe('DELETE /products/:id', () => {
   test(`should NOT delete other user's product`, async () => {
     const { body } = await request(app)
       .delete(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.4.3')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .expect(403);
 
@@ -927,6 +930,7 @@ describe('DELETE /products/:id', () => {
 
     const { body } = await request(app)
       .delete(`/products/${incorrectId}`)
+      .set('X-Forwarded-For', '192.168.4.4')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .expect(404);
 
@@ -938,6 +942,7 @@ describe('DELETE /products/:id', () => {
   test('should get 500 if passed incorrect id (but not ObjectId)', async () => {
     const { body } = await request(app)
       .delete('/products/incorrectId')
+      .set('X-Forwarded-For', '192.168.4.5')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .expect(500);
 
@@ -947,7 +952,10 @@ describe('DELETE /products/:id', () => {
   test('should get 401 if user has staus pending', async () => {
     await User.findByIdAndUpdate(userOne._id, { status: userStatuses.PENDING });
 
-    const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
+    const { body } = await request(app)
+      .delete(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.4.6')
+      .expect(401);
     expect(body).toEqual({
       message: authMiddlewaresErrorMessage,
     });
@@ -957,7 +965,10 @@ describe('DELETE /products/:id', () => {
   });
 
   test('should get 401 if user is unauthenticated', async () => {
-    const { body } = await request(app).delete(`/products/${productOne._id}`).expect(401);
+    const { body } = await request(app)
+      .delete(`/products/${productOne._id}`)
+      .set('X-Forwarded-For', '192.168.4.7')
+      .expect(401);
     expect(body).toEqual({
       message: authMiddlewaresErrorMessage,
     });
@@ -1002,8 +1013,9 @@ describe('POST /products/:id/photo', () => {
   test('should NOT upload photo for first product by not a seller', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.50')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(403);
 
     const product = await Product.findById(productOne._id).lean();
@@ -1030,8 +1042,9 @@ describe('POST /products/:id/photo', () => {
 
     const { body } = await request(app)
       .post(`/products/${incorrectId}/photo`)
+      .set('X-Forwarded-For', '192.168.4.51')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(404);
 
     expect(body).toEqual({
@@ -1042,8 +1055,9 @@ describe('POST /products/:id/photo', () => {
   test('should get 500 if passed id is not correct ObjectId', async () => {
     const { body } = await request(app)
       .post('/products/incorrectId/photo')
+      .set('X-Forwarded-For', '192.168.4.52')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(500);
 
     expect(body.kind).toEqual('ObjectId');
@@ -1052,8 +1066,9 @@ describe('POST /products/:id/photo', () => {
   test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.53')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({
@@ -1067,7 +1082,8 @@ describe('POST /products/:id/photo', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .set('X-Forwarded-For', '192.168.4.54')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({
@@ -1129,6 +1145,7 @@ describe('DELETE /products/:id/photo', () => {
 
     await request(app)
       .delete(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.70')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(200);
 
@@ -1150,6 +1167,7 @@ describe('DELETE /products/:id/photo', () => {
 
     await request(app)
       .delete(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.71')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .expect(200);
 
@@ -1164,6 +1182,7 @@ describe('DELETE /products/:id/photo', () => {
 
     const { body } = await request(app)
       .delete(`/products/${incorrectId}/photo`)
+      .set('X-Forwarded-For', '192.168.4.72')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(404);
 
@@ -1180,6 +1199,7 @@ describe('DELETE /products/:id/photo', () => {
 
     await request(app)
       .delete('/products/incorrectId/photo')
+      .set('X-Forwarded-For', '192.168.4.73')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(500);
 
@@ -1190,6 +1210,7 @@ describe('DELETE /products/:id/photo', () => {
   test('should get 404 if product photo does not exist', async () => {
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.74')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(404);
 
@@ -1203,6 +1224,7 @@ describe('DELETE /products/:id/photo', () => {
 
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.75')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .expect(403);
 
@@ -1219,8 +1241,9 @@ describe('DELETE /products/:id/photo', () => {
 
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
+      .set('X-Forwarded-For', '192.168.4.76')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({
@@ -1236,7 +1259,8 @@ describe('DELETE /products/:id/photo', () => {
 
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
-      .attach('photo', 'tests/fixtures/mushrooms.jpg')
+      .set('X-Forwarded-For', '192.168.4.77')
+      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({

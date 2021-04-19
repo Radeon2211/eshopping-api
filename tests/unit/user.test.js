@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const bcrypt = require('bcrypt');
 const validateUUID = require('uuid-validate');
-const app = require('../src/app');
-const User = require('../src/models/userModel');
-const Product = require('../src/models/productModel');
-const VerificationCode = require('../src/models/verificationCodeModel');
+const app = require('../../src/app');
+const User = require('../../src/models/userModel');
+const Product = require('../../src/models/productModel');
+const VerificationCode = require('../../src/models/verificationCodeModel');
 const {
   userOne,
   userTwo,
@@ -17,12 +17,12 @@ const {
   productFour,
   setupDatabase,
 } = require('./fixtures/db');
-const { getFullUser, agendaRemoveExpiredUser } = require('../src/shared/utility');
+const { getFullUser, agendaRemoveExpiredUser } = require('../../src/shared/utility');
 const {
   verificationCodeTypes,
   userStatuses,
   authMiddlewaresErrorMessage,
-} = require('../src/shared/constants');
+} = require('../../src/shared/constants');
 
 beforeEach(setupDatabase);
 
@@ -844,6 +844,7 @@ describe('PATCH /users/me', () => {
         body: { user },
       } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.50')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send(updates)
         .expect(200);
@@ -907,6 +908,7 @@ describe('PATCH /users/me', () => {
         body: { user },
       } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.51')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: newPhone,
@@ -932,6 +934,7 @@ describe('PATCH /users/me', () => {
         body: { user },
       } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.53')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: newPhone,
@@ -945,6 +948,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update phone if it has not prefix', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.54')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: '987612345',
@@ -960,6 +964,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update phone if it has too long prefix', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.55')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: '+12345 987612345',
@@ -975,6 +980,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update phone if it has too long phone number (second part)', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.56')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: '+1 1234567891234567',
@@ -990,6 +996,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update phone if it has too short phone number (second part)', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.57')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           phone: '+1234 1234',
@@ -1005,6 +1012,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update username', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.58')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           username: 'newUsername',
@@ -1022,6 +1030,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update email', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.59')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           email: 'newemail@domain.com',
@@ -1041,6 +1050,7 @@ describe('PATCH /users/me', () => {
 
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.60')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           createdAt: newCreatedAt,
@@ -1058,6 +1068,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update isAdmin', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.61')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           isAdmin: true,
@@ -1075,6 +1086,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update tokens', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.62')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           tokens: [],
@@ -1092,6 +1104,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update cart', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.63')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           cart: [],
@@ -1109,6 +1122,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update status', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.64')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           status: userStatuses.PENDING,
@@ -1130,6 +1144,7 @@ describe('PATCH /users/me', () => {
 
       await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.65')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           currentPassword: userOne.password,
@@ -1145,6 +1160,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update password without current password', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.66')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           password: 'newPassword',
@@ -1159,6 +1175,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update password if current password is invalid', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.67')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           currentPassword: 'incorrentPassword',
@@ -1174,6 +1191,7 @@ describe('PATCH /users/me', () => {
     test('should NOT update password if new password is the same as current password', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.68')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({
           currentPassword: userOne.password,
@@ -1191,6 +1209,7 @@ describe('PATCH /users/me', () => {
     test('should get 401 if user has status pending', async () => {
       const { body } = await request(app)
         .patch('/users/me')
+        .set('X-Forwarded-For', '192.168.2.69')
         .set('Cookie', [`token=${userFour.tokens[0].token}`])
         .send({
           country: 'Russia',
@@ -1610,12 +1629,14 @@ describe('PATCH /users/remove-admin', () => {
   test('should admin remove other admin', async () => {
     await request(app)
       .patch('/users/add-admin')
+      .set('X-Forwarded-For', '192.168.2.100')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ email: userOne.email })
       .expect(200);
 
     await request(app)
       .patch('/users/remove-admin')
+      .set('X-Forwarded-For', '192.168.2.100')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ email: userOne.email })
       .expect(200);
@@ -1627,6 +1648,7 @@ describe('PATCH /users/remove-admin', () => {
   test('should NOT non admin remove other admin', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
+      .set('X-Forwarded-For', '192.168.2.101')
       .set('Cookie', [`token=${userTwo.tokens[0].token}`])
       .send({ email: userThree.email })
       .expect(403);
@@ -1642,6 +1664,7 @@ describe('PATCH /users/remove-admin', () => {
   test('should get 404 if user with given email does not exist', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
+      .set('X-Forwarded-For', '192.168.2.102')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ email: 'nonexisting@email.com' })
       .expect(404);
@@ -1654,6 +1677,7 @@ describe('PATCH /users/remove-admin', () => {
   test('should get 400 if user with given email is already not an admin', async () => {
     const { body } = await request(app)
       .patch('/users/remove-admin')
+      .set('X-Forwarded-For', '192.168.2.103')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ email: userOne.email })
       .expect(400);
@@ -1666,6 +1690,7 @@ describe('PATCH /users/remove-admin', () => {
   test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/users/add-admin')
+      .set('X-Forwarded-For', '192.168.2.104')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
       .expect(401);
 
@@ -1675,7 +1700,10 @@ describe('PATCH /users/remove-admin', () => {
   });
 
   test('should get 401 if user is unauthenticated', async () => {
-    const { body } = await request(app).patch('/users/remove-admin').expect(401);
+    const { body } = await request(app)
+      .patch('/users/remove-admin')
+      .set('X-Forwarded-For', '192.168.2.105')
+      .expect(401);
     expect(body).toEqual({
       message: authMiddlewaresErrorMessage,
     });
@@ -1686,6 +1714,7 @@ describe('DELETE /users/me', () => {
   test('should delete user profile and its products', async () => {
     await request(app)
       .delete('/users/me')
+      .set('X-Forwarded-For', '192.168.2.120')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ currentPassword: userOne.password })
       .expect(200);
@@ -1715,6 +1744,7 @@ describe('DELETE /users/me', () => {
 
     await request(app)
       .delete('/users/me')
+      .set('X-Forwarded-For', '192.168.2.121')
       .set('Cookie', [`token=${newUserBefore.tokens[0].token}`])
       .send({ currentPassword: newUserData.password })
       .expect(200);
@@ -1729,6 +1759,7 @@ describe('DELETE /users/me', () => {
   test('should NOT delete user profile if currentPassword is incorrect', async () => {
     const { body } = await request(app)
       .delete('/users/me')
+      .set('X-Forwarded-For', '192.168.2.122')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ currentPassword: 'incorrectPassword' })
       .expect(400);
@@ -1744,6 +1775,7 @@ describe('DELETE /users/me', () => {
   test('should NOT delete user profile without currentPassword', async () => {
     const { body } = await request(app)
       .delete('/users/me')
+      .set('X-Forwarded-For', '192.168.2.123')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .expect(400);
 
@@ -1756,7 +1788,10 @@ describe('DELETE /users/me', () => {
   });
 
   test('should get 401 if user is unauthenticated', async () => {
-    const { body } = await request(app).delete('/users/me').expect(401);
+    const { body } = await request(app)
+      .delete('/users/me')
+      .set('X-Forwarded-For', '192.168.2.124')
+      .expect(401);
     expect(body).toEqual({
       message: authMiddlewaresErrorMessage,
     });

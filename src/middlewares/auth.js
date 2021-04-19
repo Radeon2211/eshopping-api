@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const { userStatuses, authMiddlewaresErrorMessage } = require('../shared/constants');
+const { userStatuses, authMiddlewaresErrorMessage, envModes } = require('../shared/constants');
 
 const authPending = async (req, res, next) => {
   try {
@@ -34,7 +34,19 @@ const authActive = async (req, res, next) => {
   }
 };
 
+const seedAuth = async (_, res, next) => {
+  try {
+    if (process.env.MODE !== envModes.E2E_TESTING) {
+      throw new Error();
+    }
+    next();
+  } catch (err) {
+    res.status(401).send({ message: authMiddlewaresErrorMessage });
+  }
+};
+
 module.exports = {
   authPending,
   authActive,
+  seedAuth,
 };

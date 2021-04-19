@@ -1,9 +1,9 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { ObjectId } = require('mongoose').Types;
-const app = require('../src/app');
-const Product = require('../src/models/productModel');
-const User = require('../src/models/userModel');
+const app = require('../../src/app');
+const Product = require('../../src/models/productModel');
+const User = require('../../src/models/userModel');
 const {
   userOne,
   userTwo,
@@ -22,7 +22,7 @@ const {
   updateCartActions,
   productConditions,
   authMiddlewaresErrorMessage,
-} = require('../src/shared/constants');
+} = require('../../src/shared/constants');
 
 beforeEach(setupDatabase);
 
@@ -159,6 +159,7 @@ describe('PATCH /cart/add', () => {
       body: { cart, isDifferent },
     } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.1')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ quantity: 2, product: productTwo._id })
       .expect(200);
@@ -217,6 +218,7 @@ describe('PATCH /cart/add', () => {
       body: { cart, isDifferent },
     } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.2')
       .set('Cookie', [`token=${userThree.tokens[0].token}`])
       .send({ quantity: 3, product: productTwo._id })
       .expect(200);
@@ -253,6 +255,7 @@ describe('PATCH /cart/add', () => {
       body: { cart, isDifferent },
     } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.3')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 1, product: productTwo._id })
       .expect(200);
@@ -302,6 +305,7 @@ describe('PATCH /cart/add', () => {
       body: { cart, isDifferent },
     } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.4')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 3, product: productTwo._id })
       .expect(200);
@@ -362,6 +366,7 @@ describe('PATCH /cart/add', () => {
       await new Product(product).save();
       await request(app)
         .patch('/cart/add')
+        .set('X-Forwarded-For', '192.168.3.5')
         .set('Cookie', [`token=${userOne.tokens[0].token}`])
         .send({ quantity: 1, product: productId })
         .expect(200);
@@ -369,6 +374,7 @@ describe('PATCH /cart/add', () => {
 
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.6')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 2, product: productThree._id })
       .expect(403);
@@ -381,6 +387,7 @@ describe('PATCH /cart/add', () => {
   test('should get 403 if user is an owner', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.7')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 1, product: productOne._id })
       .expect(403);
@@ -393,6 +400,7 @@ describe('PATCH /cart/add', () => {
   test('should get 404 if given productId does not exists in db', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.8')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 1, product: new mongoose.Types.ObjectId() })
       .expect(404);
@@ -405,6 +413,7 @@ describe('PATCH /cart/add', () => {
   test('should get 400 if given quantity is lower than 1', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.9')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 0, product: productTwo._id })
       .expect(400);
@@ -417,6 +426,7 @@ describe('PATCH /cart/add', () => {
   test('should get 400 if given no quantity is given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.10')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ product: productTwo._id })
       .expect(400);
@@ -429,6 +439,7 @@ describe('PATCH /cart/add', () => {
   test('should get 400 if no product is given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.11')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({ quantity: 1 })
       .expect(400);
@@ -441,6 +452,7 @@ describe('PATCH /cart/add', () => {
   test('should get 400 if no data are given', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.12')
       .set('Cookie', [`token=${userOne.tokens[0].token}`])
       .send({})
       .expect(400);
@@ -453,6 +465,7 @@ describe('PATCH /cart/add', () => {
   test('should get 401 if user has status pending', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.13')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
       .send({ quantity: 1, product: productOne._id })
       .expect(401);
@@ -465,6 +478,7 @@ describe('PATCH /cart/add', () => {
   test('should get 401 if user is unauthenticated', async () => {
     const { body } = await request(app)
       .patch('/cart/add')
+      .set('X-Forwarded-For', '192.168.3.14')
       .send({ quantity: 1, product: productOne._id })
       .expect(401);
 

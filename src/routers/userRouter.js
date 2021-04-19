@@ -51,9 +51,7 @@ router.post('/users', signupLimiter, async (req, res) => {
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.ACCOUNT_ACTIVATION,
     );
-    if (process.env.MODE !== envModes.TESTING) {
-      await sendAccountVerificationEmail(user.email, user.username, verificationLink);
-    }
+    await sendAccountVerificationEmail(user.email, user.username, verificationLink);
 
     const token = await user.generateAuthToken();
     if (process.env.MODE === envModes.PRODUCTION) {
@@ -115,9 +113,7 @@ router.post(
       const verificationLink = await req.user.generateVerificationCode(
         verificationCodeTypes.ACCOUNT_ACTIVATION,
       );
-      if (process.env.MODE !== envModes.TESTING) {
-        await sendAccountVerificationEmail(req.user.email, req.user.username, verificationLink);
-      }
+      await sendAccountVerificationEmail(req.user.email, req.user.username, verificationLink);
 
       res.send();
     } catch (err) {
@@ -172,9 +168,7 @@ router.post('/users/request-for-reset-password', resetPasswordRequestLimiter, as
     const verificationLink = await user.generateVerificationCode(
       verificationCodeTypes.RESET_PASSWORD,
     );
-    if (process.env.MODE !== envModes.TESTING) {
-      await sendResetPasswordVerificationEmail(user.email, verificationLink);
-    }
+    await sendResetPasswordVerificationEmail(user.email, verificationLink);
 
     res.send();
   } catch (err) {
@@ -202,9 +196,7 @@ router.get('/users/:id/reset-password/:code', verificationLinkLimiter, async (re
     });
     user.password = newPassword;
 
-    if (process.env.MODE !== envModes.TESTING) {
-      await sendNewPasswordEmail(user.email, newPassword);
-    }
+    await sendNewPasswordEmail(user.email, newPassword);
 
     await user.save();
     await verificationCode.remove();
@@ -288,9 +280,8 @@ router.patch('/users/me/email', changeEmailLimiter, authActive, async (req, res)
       verificationCodeTypes.CHANGE_EMAIL,
       req.body.email,
     );
-    if (process.env.MODE !== envModes.TESTING) {
-      await sendChangeEmailVerificationEmail(req.body.email, verificationLink);
-    }
+    await sendChangeEmailVerificationEmail(req.body.email, verificationLink);
+
     res.send();
   } catch (err) {
     if (err.message) {
