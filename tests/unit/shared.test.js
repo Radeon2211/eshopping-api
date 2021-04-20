@@ -1,5 +1,6 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+const mockedEnv = require('mocked-env');
 const validateUUID = require('uuid-validate');
 const app = require('../../src/app');
 const Product = require('../../src/models/productModel');
@@ -24,6 +25,7 @@ const {
   CART_POPULATE,
   MyError,
   verificationCodeTypes,
+  envModes,
 } = require('../../src/shared/constants');
 const {
   createSortObject,
@@ -39,6 +41,8 @@ const {
   verifyItemsToBuy,
   splitOrderProducts,
   verificationCodeChecker,
+  isTestingMode,
+  isDevOrE2EMode,
 } = require('../../src/shared/utility');
 
 beforeEach(setupDatabase);
@@ -1005,6 +1009,70 @@ describe('Utility', () => {
       expect(isError).toEqual(true);
       expect(user).toEqual(null);
       expect(verificationCode).toEqual(null);
+    });
+  });
+
+  describe('isTestingMode()', () => {
+    let restoreEnv;
+
+    const testFunction = (mode, expectedResult) => {
+      restoreEnv = mockedEnv({
+        MODE: mode,
+      });
+      const result = isTestingMode();
+      expect(result).toEqual(expectedResult);
+    };
+
+    afterEach(() => {
+      restoreEnv();
+    });
+
+    test('should return true if environment mode is UNIT_TESTING', async () => {
+      testFunction(envModes.UNIT_TESTING, true);
+    });
+
+    test('should return true if environment mode is E2E_TESTING', async () => {
+      testFunction(envModes.E2E_TESTING, true);
+    });
+
+    test('should return false if environment mode is DEVELOPMENT', async () => {
+      testFunction(envModes.DEVELOPMENT, false);
+    });
+
+    test('should return false if environment mode is PRODUCTION', async () => {
+      testFunction(envModes.PRODUCTION, false);
+    });
+  });
+
+  describe('isDevOrE2EMode()', () => {
+    let restoreEnv;
+
+    const testFunction = (mode, expectedResult) => {
+      restoreEnv = mockedEnv({
+        MODE: mode,
+      });
+      const result = isDevOrE2EMode();
+      expect(result).toEqual(expectedResult);
+    };
+
+    afterEach(() => {
+      restoreEnv();
+    });
+
+    test('should return false if environment mode is UNIT_TESTING', async () => {
+      testFunction(envModes.UNIT_TESTING, false);
+    });
+
+    test('should return true if environment mode is E2E_TESTING', async () => {
+      testFunction(envModes.E2E_TESTING, true);
+    });
+
+    test('should return true if environment mode is DEVELOPMENT', async () => {
+      testFunction(envModes.DEVELOPMENT, true);
+    });
+
+    test('should return false if environment mode is PRODUCTION', async () => {
+      testFunction(envModes.PRODUCTION, false);
     });
   });
 });

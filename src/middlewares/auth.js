@@ -34,7 +34,7 @@ const authActive = async (req, res, next) => {
   }
 };
 
-const seedAuth = async (_, res, next) => {
+const e2eAuth = async (_, res, next) => {
   try {
     if (process.env.MODE !== envModes.E2E_TESTING) {
       throw new Error();
@@ -48,5 +48,5 @@ const seedAuth = async (_, res, next) => {
 module.exports = {
   authPending,
   authActive,
-  seedAuth,
+  e2eAuth,
 };

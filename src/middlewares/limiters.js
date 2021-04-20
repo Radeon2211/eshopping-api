@@ -1,7 +1,7 @@
 const rateLimit = require('express-rate-limit');
 const { isDevOrE2EMode } = require('../shared/utility');
 
-const devAndE2EMaxLimit = 200;
+const devAndE2EMaxLimit = 500;
 const yieldMaxLimit = (limit) => (!isDevOrE2EMode() ? limit : devAndE2EMaxLimit);
 
 const unlessPhotoLimits = {

@@ -17,7 +17,6 @@ const {
   updateCartActions,
   MAX_CART_ITEMS_NUMBER,
   verificationCodeTypes,
-  envModes,
   userStatuses,
 } = require('../shared/constants');
 const {
@@ -25,6 +24,7 @@ const {
   verifyItemsToTransaction,
   getFullUser,
   verificationCodeChecker,
+  setCookieToken,
 } = require('../shared/utility');
 const {
   sendAccountVerificationEmail,
@@ -54,11 +54,8 @@ router.post('/users', signupLimiter, async (req, res) => {
     await sendAccountVerificationEmail(user.email, user.username, verificationLink);
 
     const token = await user.generateAuthToken();
-    if (process.env.MODE === envModes.PRODUCTION) {
-      res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
-    } else {
-      res.cookie('token', token, { httpOnly: true });
-    }
+    setCookieToken(res, token);
+
     res.status(201).send({ user });
   } catch (err) {
     if (user) {
@@ -75,11 +72,7 @@ router.post('/users/login', loginLimiter, async (req, res) => {
     const isCartDifferent = await updateUserCart(user, user.cart);
 
     const token = await user.generateAuthToken();
-    if (process.env.MODE === envModes.PRODUCTION) {
-      res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
-    } else {
-      res.cookie('token', token, { httpOnly: true });
-    }
+    setCookieToken(res, token);
 
     const fullUser = await getFullUser(user._id);
     res.send({ user: fullUser, isDifferent: isCartDifferent });

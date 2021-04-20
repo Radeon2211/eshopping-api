@@ -13,8 +13,7 @@ const productRouter = require('./routers/productRouter');
 const orderRouter = require('./routers/orderRouter');
 const testingRouter = require('./routers/testingRouter');
 const { unlessPhotoLimiter } = require('./middlewares/limiters');
-const { agendaRemoveExpiredUser, isDevOrE2EMode } = require('./shared/utility');
-const { envModes } = require('./shared/constants');
+const { agendaRemoveExpiredUser } = require('./shared/utility');
 
 const app = express();
 
@@ -30,10 +29,6 @@ app.use(
 app.use(xss());
 
 app.use(parameterPollution());
-
-if (!isDevOrE2EMode()) {
-  app.use(unlessPhotoLimiter);
-}
 
 app.use(helmet());
 app.use(helmet.hidePoweredBy());
@@ -54,12 +49,12 @@ app.use(
   }),
 );
 
+app.use(unlessPhotoLimiter);
+
 app.use(userRouter);
 app.use(productRouter);
 app.use(orderRouter);
-if (process.env.MODE === envModes.E2E_TESTING) {
-  app.use(testingRouter);
-}
+app.use(testingRouter);
 
 const agenda = new Agenda({
   db: {

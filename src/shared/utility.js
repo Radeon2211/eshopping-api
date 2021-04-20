@@ -232,6 +232,14 @@ const isDevOrE2EMode = () =>
 const isTestingMode = () =>
   process.env.MODE === envModes.UNIT_TESTING || process.env.MODE === envModes.E2E_TESTING;
 
+const setCookieToken = (res, token) => {
+  if (process.env.MODE === envModes.PRODUCTION) {
+    res.cookie('token', token, { httpOnly: true, sameSite: 'None', secure: true });
+  } else {
+    res.cookie('token', token, { httpOnly: true });
+  }
+};
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
@@ -249,4 +257,5 @@ module.exports = {
   agendaRemoveExpiredUser,
   isDevOrE2EMode,
   isTestingMode,
+  setCookieToken,
 };

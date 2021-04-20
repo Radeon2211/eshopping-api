@@ -1,5 +1,7 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+const mockedEnv = require('mocked-env');
+const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const bcrypt = require('bcrypt');
 const validateUUID = require('uuid-validate');
@@ -22,6 +24,7 @@ const {
   verificationCodeTypes,
   userStatuses,
   authMiddlewaresErrorMessage,
+  envModes,
 } = require('../../src/shared/constants');
 
 beforeEach(setupDatabase);
@@ -182,6 +185,52 @@ describe('POST /users', () => {
 });
 
 describe('POST /users/login', () => {
+  let restoreEnv;
+
+  beforeEach(() => {
+    if (restoreEnv) restoreEnv();
+  });
+
+  test('should get correct cookies after successful login when environment is PRODUCTION', async () => {
+    restoreEnv = mockedEnv({
+      MODE: envModes.PRODUCTION,
+    });
+
+    const { headers } = await request(app)
+      .post('/users/login')
+      .send({
+        email: userOne.email,
+        password: userOne.password,
+      })
+      .expect(200);
+
+    const setCookieItem = headers['set-cookie'][0];
+    const jwtToken = setCookieItem.split(';')[0].split('=')[1];
+    const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
+    expect(decoded?._id).not.toBeUndefined();
+    expect(setCookieItem.includes('HttpOnly')).toEqual(true);
+    expect(setCookieItem.includes('Secure')).toEqual(true);
+    expect(setCookieItem.includes('SameSite')).toEqual(true);
+  });
+
+  test('should get correct cookies after successful login when environment is other than PRODUCTION', async () => {
+    const { headers } = await request(app)
+      .post('/users/login')
+      .send({
+        email: userOne.email,
+        password: userOne.password,
+      })
+      .expect(200);
+
+    const setCookieItem = headers['set-cookie'][0];
+    const jwtToken = setCookieItem.split(';')[0].split('=')[1];
+    const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
+    expect(decoded?._id).not.toBeUndefined();
+    expect(setCookieItem.includes('HttpOnly')).toEqual(true);
+    expect(setCookieItem.includes('Secure')).toEqual(false);
+    expect(setCookieItem.includes('SameSite')).toEqual(false);
+  });
+
   test('should get isDifferent false and full user', async () => {
     const {
       body: { user, isDifferent },

@@ -12,8 +12,10 @@ const emailTemplates = {
   CHANGE_EMAIL_VERIFICATION: 'd-7d32c6c485364807933c14cf78fba02d',
 };
 
+const blockSendingEmail = isTestingMode();
+
 const sendAccountVerificationEmail = async (email, username, verificationLink) => {
-  if (isTestingMode()) return;
+  if (blockSendingEmail) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -27,7 +29,7 @@ const sendAccountVerificationEmail = async (email, username, verificationLink) =
 };
 
 const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
-  if (isTestingMode()) return;
+  if (blockSendingEmail) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -39,7 +41,7 @@ const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
 };
 
 const sendNewPasswordEmail = async (email, newPassword) => {
-  if (isTestingMode()) return;
+  if (blockSendingEmail) return;
   await sgMail.send({
     to: email,
     from: sender,
@@ -51,7 +53,7 @@ const sendNewPasswordEmail = async (email, newPassword) => {
 };
 
 const sendChangeEmailVerificationEmail = async (email, verificationLink) => {
-  if (isTestingMode()) return;
+  if (blockSendingEmail) return;
   await sgMail.send({
     to: email,
     from: sender,
