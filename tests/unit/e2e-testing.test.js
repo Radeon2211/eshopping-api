@@ -5,27 +5,21 @@ const Product = require('../../src/models/productModel');
 const User = require('../../src/models/userModel');
 const Order = require('../../src/models/orderModel');
 const VerificationCode = require('../../src/models/verificationCodeModel');
-const { setupDatabase, userOne } = require('./fixtures/db');
-const { envModes, authMiddlewaresErrorMessage } = require('../../src/shared/constants');
+const { setupDatabase, userOne, userFour } = require('./fixtures/db');
+const {
+  envModes,
+  authMiddlewaresErrorMessage,
+  userStatuses,
+} = require('../../src/shared/constants');
 const cypressFixtures = require('../cypress/db');
 
 let restoreEnv;
 
-const testSeedWhenNotE2ETesting = async (mode) => {
+const testWhenNotE2ETesting = async (mode, route) => {
   restoreEnv = mockedEnv({
     MODE: mode,
   });
-  const { body } = await request(app).post('/testing/seed').expect(401);
-  expect(body).toEqual({
-    message: authMiddlewaresErrorMessage,
-  });
-};
-
-const testVerifyEmailWhenNotE2ETesting = async (mode) => {
-  restoreEnv = mockedEnv({
-    MODE: mode,
-  });
-  const { body } = await request(app).post('/testing/seed').expect(401);
+  const { body } = await request(app).patch(route).expect(401);
   expect(body).toEqual({
     message: authMiddlewaresErrorMessage,
   });
@@ -44,15 +38,27 @@ afterEach(() => {
 });
 
 describe('POST /testing/seed', () => {
+  const testedRoute = '/testing/seed';
+
   test('should seed database', async () => {
-    await request(app).post('/testing/seed').expect(200);
+    await request(app).patch(testedRoute).expect(200);
 
     const users = await User.find().lean();
     expect(users).toEqual([
       {
-        ...cypressFixtures.userOne,
+        ...cypressFixtures.adminUser,
         password: users[0].password,
         createdAt: users[0].createdAt,
+      },
+      {
+        ...cypressFixtures.activeUser,
+        password: users[1].password,
+        createdAt: users[1].createdAt,
+      },
+      {
+        ...cypressFixtures.pendingUser,
+        password: users[2].password,
+        createdAt: users[2].createdAt,
       },
     ]);
 
@@ -62,6 +68,11 @@ describe('POST /testing/seed', () => {
         ...cypressFixtures.productOne,
         createdAt: products[0].createdAt,
         updatedAt: products[0].updatedAt,
+      },
+      {
+        ...cypressFixtures.productTwo,
+        createdAt: products[1].createdAt,
+        updatedAt: products[1].updatedAt,
       },
     ]);
 
@@ -73,19 +84,21 @@ describe('POST /testing/seed', () => {
   });
 
   test('should get 401 if environment mode is PRODUCTION', async () => {
-    await testSeedWhenNotE2ETesting(envModes.PRODUCTION);
+    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
   });
 
   test('should get 401 if environment mode is DEVELOPMENT', async () => {
-    await testSeedWhenNotE2ETesting(envModes.DEVELOPMENT);
+    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
   });
 
   test('should get 401 if environment mode is UNIT_TESTING', async () => {
-    await testSeedWhenNotE2ETesting(envModes.UNIT_TESTING);
+    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
   });
 });
 
-describe('POST /testing/verify-email', () => {
+describe('PATCH /testing/verify-email', () => {
+  const testedRoute = '/testing/verify-email';
+
   test('should change email and delete verification code', async () => {
     const newEmail = 'newemail@example.com';
     await request(app)
@@ -101,7 +114,7 @@ describe('POST /testing/verify-email', () => {
     expect(verificationCodesBefore).toHaveLength(1);
 
     await request(app)
-      .patch('/testing/verify-email')
+      .patch(testedRoute)
       .send({
         email: userOne.email,
       })
@@ -115,14 +128,53 @@ describe('POST /testing/verify-email', () => {
   });
 
   test('should get 401 if environment mode is PRODUCTION', async () => {
-    await testVerifyEmailWhenNotE2ETesting(envModes.PRODUCTION);
+    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
   });
 
   test('should get 401 if environment mode is DEVELOPMENT', async () => {
-    await testVerifyEmailWhenNotE2ETesting(envModes.DEVELOPMENT);
+    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
   });
 
   test('should get 401 if environment mode is UNIT_TESTING', async () => {
-    await testVerifyEmailWhenNotE2ETesting(envModes.UNIT_TESTING);
+    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
+  });
+});
+
+describe('PATCH /testing/activate-account', () => {
+  const testedRoute = '/testing/activate-account';
+
+  test('should activate account and delete verification code', async () => {
+    await request(app)
+      .post('/users/send-account-verification-email')
+      .set('Cookie', [`token=${userFour.tokens[0].token}`])
+      .expect(200);
+
+    const verificationCodesBefore = await VerificationCode.find().lean();
+    expect(verificationCodesBefore).toHaveLength(1);
+
+    await request(app)
+      .patch(testedRoute)
+      .send({
+        email: userFour.email,
+      })
+      .expect(200);
+
+    const user = await User.findOne({ email: userFour.email });
+    expect(user.status).toEqual(userStatuses.ACTIVE);
+
+    const verificationCodesAfter = await VerificationCode.find().lean();
+    expect(verificationCodesAfter).toHaveLength(0);
+  });
+
+  test('should get 401 if environment mode is PRODUCTION', async () => {
+    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
+  });
+
+  test('should get 401 if environment mode is DEVELOPMENT', async () => {
+    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
+  });
+
+  test('should get 401 if environment mode is UNIT_TESTING', async () => {
+    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
   });
 });
