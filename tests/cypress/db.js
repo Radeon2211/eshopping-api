@@ -1,4 +1,3 @@
-// const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { productConditions, userStatuses } = require('../../src/shared/constants');
 
@@ -7,6 +6,7 @@ const activeUserId = new mongoose.Types.ObjectId();
 const pendingUserId = new mongoose.Types.ObjectId();
 const productOneId = new mongoose.Types.ObjectId();
 const productTwoId = new mongoose.Types.ObjectId();
+const productThreeId = new mongoose.Types.ObjectId();
 
 const adminUser = {
   _id: adminUserId,
@@ -76,7 +76,7 @@ const productOne = {
   _id: productOneId,
   name: 'Product One',
   description: 'Cool product',
-  price: 15.5,
+  price: 120,
   quantity: 10,
   seller: adminUserId,
   condition: productConditions.NEW,
@@ -89,7 +89,7 @@ const productTwo = {
   _id: productTwoId,
   name: 'Product Two',
   description: 'Another awesome product',
-  price: 120,
+  price: 15.5,
   quantity: 50,
   seller: activeUserId,
   condition: productConditions.USED,
@@ -98,10 +98,29 @@ const productTwo = {
   __v: 0,
 };
 
+const productThree = {
+  _id: productThreeId,
+  name: 'Product Three',
+  description: 'Other super cool product',
+  price: 179.49,
+  quantity: 100,
+  seller: activeUserId,
+  condition: productConditions.NOT_APPLICABLE,
+  buyerQuantity: 0,
+  quantitySold: 0,
+  __v: 0,
+};
+
+const users = [adminUser, activeUser, pendingUser];
+const products = [productOne, productTwo, productThree];
+
 module.exports = {
   adminUser,
   activeUser,
   pendingUser,
   productOne,
   productTwo,
+  productThree,
+  users,
+  products,
 };

@@ -45,35 +45,20 @@ describe('POST /testing/seed', () => {
 
     const users = await User.find().lean();
     expect(users).toEqual([
-      {
-        ...cypressFixtures.adminUser,
-        password: users[0].password,
-        createdAt: users[0].createdAt,
-      },
-      {
-        ...cypressFixtures.activeUser,
-        password: users[1].password,
-        createdAt: users[1].createdAt,
-      },
-      {
-        ...cypressFixtures.pendingUser,
-        password: users[2].password,
-        createdAt: users[2].createdAt,
-      },
+      ...cypressFixtures.users.map((user, idx) => ({
+        ...user,
+        password: users[parseInt(idx, 10)].password,
+        createdAt: users[parseInt(idx, 10)].createdAt,
+      })),
     ]);
 
     const products = await Product.find().lean();
     expect(products).toEqual([
-      {
-        ...cypressFixtures.productOne,
-        createdAt: products[0].createdAt,
-        updatedAt: products[0].updatedAt,
-      },
-      {
-        ...cypressFixtures.productTwo,
-        createdAt: products[1].createdAt,
-        updatedAt: products[1].updatedAt,
-      },
+      ...cypressFixtures.products.map((user, idx) => ({
+        ...user,
+        createdAt: products[parseInt(idx, 10)].createdAt,
+        updatedAt: products[parseInt(idx, 10)].updatedAt,
+      })),
     ]);
 
     const orders = await Order.find().lean();

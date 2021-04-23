@@ -4,13 +4,7 @@ const Product = require('../models/productModel');
 const User = require('../models/userModel');
 const VerificationCode = require('../models/verificationCodeModel');
 const { e2eAuth } = require('../middlewares/auth');
-const {
-  adminUser,
-  activeUser,
-  pendingUser,
-  productOne,
-  productTwo,
-} = require('../../tests/cypress/db');
+const cypressFixtures = require('../../tests/cypress/db');
 const { verificationCodeTypes, userStatuses } = require('../shared/constants');
 
 const router = new express.Router();
@@ -22,11 +16,12 @@ router.patch('/testing/seed', e2eAuth, async (_, res) => {
     await Order.deleteMany();
     await VerificationCode.deleteMany();
 
-    await new User(adminUser).save();
-    await new User(activeUser).save();
-    await new User(pendingUser).save();
-    await new Product(productOne).save();
-    await new Product(productTwo).save();
+    for (const user of cypressFixtures.users) {
+      await new User(user).save();
+    }
+    for (const product of cypressFixtures.products) {
+      await new Product(product).save();
+    }
 
     res.send();
   } catch (err) {
