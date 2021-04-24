@@ -65,4 +65,24 @@ router.patch('/testing/activate-account', e2eAuth, async (req, res) => {
   }
 });
 
+router.patch('/testing/edit-product-quantity', e2eAuth, async (req, res) => {
+  try {
+    const { name, newQuantity } = req.body;
+    const product = await Product.findOne({
+      name,
+    });
+
+    if (newQuantity > 0) {
+      product.quantity = newQuantity;
+      await product.save();
+    } else {
+      await product.remove();
+    }
+
+    res.send();
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 module.exports = router;

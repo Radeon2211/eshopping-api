@@ -5,7 +5,7 @@ const Product = require('../../src/models/productModel');
 const User = require('../../src/models/userModel');
 const Order = require('../../src/models/orderModel');
 const VerificationCode = require('../../src/models/verificationCodeModel');
-const { setupDatabase, userOne, userFour } = require('./fixtures/db');
+const { setupDatabase, userOne, userFour, productOne } = require('./fixtures/db');
 const {
   envModes,
   authMiddlewaresErrorMessage,
@@ -15,12 +15,28 @@ const cypressFixtures = require('../cypress/db');
 
 let restoreEnv;
 
-const testWhenNotE2ETesting = async (mode, route) => {
+const testWhenNotE2ETesting = async (route) => {
   restoreEnv = mockedEnv({
-    MODE: mode,
+    MODE: envModes.PRODUCTION,
   });
-  const { body } = await request(app).patch(route).expect(401);
-  expect(body).toEqual({
+  const response1 = await request(app).patch(route).expect(401);
+  expect(response1.body).toEqual({
+    message: authMiddlewaresErrorMessage,
+  });
+
+  restoreEnv = mockedEnv({
+    MODE: envModes.DEVELOPMENT,
+  });
+  const response2 = await request(app).patch(route).expect(401);
+  expect(response2.body).toEqual({
+    message: authMiddlewaresErrorMessage,
+  });
+
+  restoreEnv = mockedEnv({
+    MODE: envModes.UNIT_TESTING,
+  });
+  const response3 = await request(app).patch(route).expect(401);
+  expect(response3.body).toEqual({
     message: authMiddlewaresErrorMessage,
   });
 };
@@ -28,6 +44,7 @@ const testWhenNotE2ETesting = async (mode, route) => {
 beforeEach(setupDatabase);
 
 beforeEach(() => {
+  if (restoreEnv) restoreEnv();
   restoreEnv = mockedEnv({
     MODE: envModes.E2E_TESTING,
   });
@@ -68,16 +85,8 @@ describe('POST /testing/seed', () => {
     expect(verificationCodes).toHaveLength(0);
   });
 
-  test('should get 401 if environment mode is PRODUCTION', async () => {
-    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
-  });
-
-  test('should get 401 if environment mode is DEVELOPMENT', async () => {
-    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
-  });
-
-  test('should get 401 if environment mode is UNIT_TESTING', async () => {
-    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
+  test('should get 401 if environment mode is other than E2E_TESTING', async () => {
+    await testWhenNotE2ETesting(testedRoute);
   });
 });
 
@@ -112,16 +121,8 @@ describe('PATCH /testing/verify-email', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('should get 401 if environment mode is PRODUCTION', async () => {
-    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
-  });
-
-  test('should get 401 if environment mode is DEVELOPMENT', async () => {
-    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
-  });
-
-  test('should get 401 if environment mode is UNIT_TESTING', async () => {
-    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
+  test('should get 401 if environment mode is other than E2E_TESTING', async () => {
+    await testWhenNotE2ETesting(testedRoute);
   });
 });
 
@@ -151,15 +152,49 @@ describe('PATCH /testing/activate-account', () => {
     expect(verificationCodesAfter).toHaveLength(0);
   });
 
-  test('should get 401 if environment mode is PRODUCTION', async () => {
-    await testWhenNotE2ETesting(envModes.PRODUCTION, testedRoute);
+  test('should get 401 if environment mode is other than E2E_TESTING', async () => {
+    await testWhenNotE2ETesting(testedRoute);
+  });
+});
+
+describe('PATCH /testing/edit-product-quantity', () => {
+  const testedRoute = '/testing/edit-product-quantity';
+
+  test('should set new quantity to product with given name', async () => {
+    const newQuantity = 2;
+
+    const productBefore = await Product.findOne({ name: productOne.name });
+    expect(productBefore.quantity).toEqual(productOne.quantity);
+
+    await request(app)
+      .patch(testedRoute)
+      .send({
+        name: productOne.name,
+        newQuantity,
+      })
+      .expect(200);
+
+    const productAfter = await Product.findOne({ name: productOne.name });
+    expect(productAfter.quantity).toEqual(newQuantity);
   });
 
-  test('should get 401 if environment mode is DEVELOPMENT', async () => {
-    await testWhenNotE2ETesting(envModes.DEVELOPMENT, testedRoute);
+  test('should remove product with given name', async () => {
+    const productBefore = await Product.findOne({ name: productOne.name });
+    expect(productBefore.quantity).toEqual(productOne.quantity);
+
+    await request(app)
+      .patch(testedRoute)
+      .send({
+        name: productOne.name,
+        newQuantity: 0,
+      })
+      .expect(200);
+
+    const productAfter = await Product.findOne({ name: productOne.name });
+    expect(productAfter).toBeNull();
   });
 
-  test('should get 401 if environment mode is UNIT_TESTING', async () => {
-    await testWhenNotE2ETesting(envModes.UNIT_TESTING, testedRoute);
+  test('should get 401 if environment mode is other than E2E_TESTING', async () => {
+    await testWhenNotE2ETesting(testedRoute);
   });
 });
