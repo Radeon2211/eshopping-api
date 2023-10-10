@@ -19,15 +19,15 @@
         "ecmaVersion": 12
     },
     "rules": {
-        "prettier/prettier": [
-            "error",
-            {
-                "endOfLine": "auto",
-                "singleQuote": true,
-                "trailingComma": "all",
-                "printWidth": 100
-            }
-        ],
+        "prettier/prettier": ["error", {
+            "bracketSpacing": true,
+            "printWidth": 100,
+            "tabWidth": 2,
+            "singleQuote": true,
+            "useTabs": false,
+            "trailingComma": "all",
+            "endOfLine": "auto"
+        }],
         "no-underscore-dangle": "off",
         "no-await-in-loop": "off",
         "consistent-return": "off",

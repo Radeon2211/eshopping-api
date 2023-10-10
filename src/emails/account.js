@@ -1,67 +1,81 @@
-const sgMail = require('@sendgrid/mail');
+const brevo = require('@getbrevo/brevo');
 const { isTestingMode } = require('../shared/utility');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const defaultClient = brevo.ApiClient.instance;
+defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
-const sender = 'eshopping-app@wp.pl';
+const apiInstance = new brevo.TransactionalEmailsApi();
 
-const emailTemplates = {
-  ACCOUNT_VERIFICATION: 'd-4ca9c74361564fa49829c72c5d157ee2',
-  RESET_PASSWORD_VERIFICATION: 'd-11a9e7ce91cc4589a47a6f79025cf448',
-  NEW_PASSWORD: 'd-d00db33ea528414998b826cb5dc77d56',
-  CHANGE_EMAIL_VERIFICATION: 'd-7d32c6c485364807933c14cf78fba02d',
+const sender = {
+  email: 'eshopping-app@wp.pl',
 };
 
 const blockSendingEmail = isTestingMode();
 
 const sendAccountVerificationEmail = async (email, username, verificationLink) => {
   if (blockSendingEmail) return;
-  await sgMail.send({
-    to: email,
-    from: sender,
-    templateId: emailTemplates.ACCOUNT_VERIFICATION,
-    dynamicTemplateData: {
-      username,
-      verificationLink,
-      websiteURL: process.env.FRONTEND_URL,
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.to = [
+    {
+      email,
     },
-  });
+  ];
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.params = {
+    username,
+    verificationLink,
+    websiteURL: process.env.FRONTEND_URL,
+  };
+  sendSmtpEmail.templateId = 3;
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 };
 
 const sendResetPasswordVerificationEmail = async (email, verificationLink) => {
   if (blockSendingEmail) return;
-  await sgMail.send({
-    to: email,
-    from: sender,
-    templateId: emailTemplates.RESET_PASSWORD_VERIFICATION,
-    dynamicTemplateData: {
-      verificationLink,
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.to = [
+    {
+      email,
     },
-  });
+  ];
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.params = {
+    verificationLink,
+  };
+  sendSmtpEmail.templateId = 4;
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 };
 
 const sendNewPasswordEmail = async (email, newPassword) => {
   if (blockSendingEmail) return;
-  await sgMail.send({
-    to: email,
-    from: sender,
-    templateId: emailTemplates.NEW_PASSWORD,
-    dynamicTemplateData: {
-      newPassword,
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.to = [
+    {
+      email,
     },
-  });
+  ];
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.params = {
+    newPassword,
+  };
+  sendSmtpEmail.templateId = 5;
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 };
 
 const sendChangeEmailVerificationEmail = async (email, verificationLink) => {
   if (blockSendingEmail) return;
-  await sgMail.send({
-    to: email,
-    from: sender,
-    templateId: emailTemplates.CHANGE_EMAIL_VERIFICATION,
-    dynamicTemplateData: {
-      verificationLink,
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
+  sendSmtpEmail.to = [
+    {
+      email,
     },
-  });
+  ];
+  sendSmtpEmail.sender = sender;
+  sendSmtpEmail.params = {
+    verificationLink,
+  };
+  sendSmtpEmail.templateId = 1;
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 };
 
 module.exports = {

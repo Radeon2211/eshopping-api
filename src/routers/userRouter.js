@@ -194,7 +194,9 @@ router.get('/users/:id/reset-password/:code', verificationLinkLimiter, async (re
     await user.save();
     await verificationCode.remove();
 
-    res.send({ message: 'New password has been sent successfully. Go back to your inbox' });
+    res.send({
+      message: 'New password has been sent successfully. Go back to your inbox',
+    });
   } catch (err) {
     if (err.message) {
       return res.status(400).send(err);
@@ -347,9 +349,9 @@ router.patch('/users/remove-admin', authActive, async (req, res) => {
       return res.status(404).send({ message: 'User with given email does not exist' });
     }
     if (!user.isAdmin) {
-      return res
-        .status(400)
-        .send({ message: 'This user is not an admin so the action is not needed' });
+      return res.status(400).send({
+        message: 'This user is not an admin so the action is not needed',
+      });
     }
     user.isAdmin = undefined;
     await user.save();

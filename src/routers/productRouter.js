@@ -48,7 +48,9 @@ router.get('/products', getCurrentUser, async (req, res) => {
         }
         break;
       case pages.USER_PRODUCTS:
-        const sellerDetails = await User.findOne({ username: sellerUsername }).lean();
+        const sellerDetails = await User.findOne({
+          username: sellerUsername,
+        }).lean();
         if (sellerDetails) {
           match.seller = sellerDetails._id;
         } else {
