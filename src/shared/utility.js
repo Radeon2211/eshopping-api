@@ -240,6 +240,17 @@ const setCookieToken = (res, token) => {
   }
 };
 
+const handleUniqueErrorWhenCreatingUser = (err) => {
+  let customErrorMsg = '';
+  if (err?.errors?.email?.kind === 'unique') {
+    customErrorMsg = 'Email address is already taken';
+  } else if (err?.errors?.username?.kind === 'unique') {
+    customErrorMsg = 'Username is already taken';
+  }
+
+  return customErrorMsg;
+};
+
 module.exports = {
   createSortObject,
   getCorrectProduct,
@@ -258,4 +269,5 @@ module.exports = {
   isDevOrE2EMode,
   isTestingMode,
   setCookieToken,
+  handleUniqueErrorWhenCreatingUser,
 };

@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: 'Email address is already taken',
+      unique: true,
       trim: true,
       uniqueCaseInsensitive: true,
       lowercase: true,
@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
-      unique: 'Username is already taken',
+      unique: true,
       minlength: 3,
       maxlength: 20,
       trim: true,

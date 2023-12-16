@@ -47,6 +47,36 @@ const newUserData = {
 };
 
 describe('POST /users', () => {
+  test('should get 409 if user with given email exist', async () => {
+    const { body } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.1')
+      .send({
+        ...newUserData,
+        email: userOne.email,
+      })
+      .expect(409);
+
+    expect(body).toEqual({
+      message: 'Email address is already taken',
+    });
+  });
+
+  test('should get 409 if user with given username exist', async () => {
+    const { body } = await request(app)
+      .post('/users')
+      .set('X-Forwarded-For', '192.168.2.1')
+      .send({
+        ...newUserData,
+        username: userOne.username,
+      })
+      .expect(409);
+
+    expect(body).toEqual({
+      message: 'Username is already taken',
+    });
+  });
+
   test('should signup a new user and create verification code', async () => {
     const dateBefore = moment();
     const {

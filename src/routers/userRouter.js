@@ -25,6 +25,7 @@ const {
   getFullUser,
   verificationCodeChecker,
   setCookieToken,
+  handleUniqueErrorWhenCreatingUser,
 } = require('../shared/utility');
 const {
   sendAccountVerificationEmail,
@@ -60,6 +61,12 @@ router.post('/users', signupLimiter, async (req, res) => {
   } catch (err) {
     if (user) {
       await User.findByIdAndDelete(user._id);
+    }
+    const customErrorMsg = handleUniqueErrorWhenCreatingUser(err);
+    if (customErrorMsg) {
+      return res.status(409).send({
+        message: customErrorMsg,
+      });
     }
     res.status(400).send(err);
   }

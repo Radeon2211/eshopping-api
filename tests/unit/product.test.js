@@ -1,4 +1,5 @@
 /* eslint-disable security/detect-object-injection */
+const fs = require('fs');
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { Binary } = require('mongodb');
@@ -1064,11 +1065,13 @@ describe('POST /products/:id/photo', () => {
   });
 
   test('should get 401 if user has status pending', async () => {
+    const photo = fs.readFileSync('tests/unit/fixtures/mushrooms.jpg');
+
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('X-Forwarded-For', '192.168.4.53')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
-      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
+      .attach('photo', photo)
       .expect(401);
 
     expect(body).toEqual({
@@ -1080,10 +1083,12 @@ describe('POST /products/:id/photo', () => {
   });
 
   test('should get 401 if user is unauthenticated', async () => {
+    const photo = fs.readFileSync('tests/unit/fixtures/mushrooms.jpg');
+
     const { body } = await request(app)
       .post(`/products/${productOne._id}/photo`)
       .set('X-Forwarded-For', '192.168.4.54')
-      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
+      .attach('photo', photo)
       .expect(401);
 
     expect(body).toEqual({
@@ -1243,7 +1248,6 @@ describe('DELETE /products/:id/photo', () => {
       .delete(`/products/${productOne._id}/photo`)
       .set('X-Forwarded-For', '192.168.4.76')
       .set('Cookie', [`token=${userFour.tokens[0].token}`])
-      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({
@@ -1260,7 +1264,6 @@ describe('DELETE /products/:id/photo', () => {
     const { body } = await request(app)
       .delete(`/products/${productOne._id}/photo`)
       .set('X-Forwarded-For', '192.168.4.77')
-      .attach('photo', 'tests/unit/fixtures/mushrooms.jpg')
       .expect(401);
 
     expect(body).toEqual({
